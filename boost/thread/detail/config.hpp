@@ -56,8 +56,8 @@
 #if defined __IBMCPP__ && (__IBMCPP__ < 1100) \
   && ! defined BOOST_THREAD_DONT_USE_CHRONO
 #define BOOST_THREAD_DONT_USE_CHRONO
-#if ! defined BOOST_THREAD_USE_DATE
-#define BOOST_THREAD_USE_DATE
+#if ! defined BOOST_THREAD_USES_DATETIME
+#define BOOST_THREAD_USES_DATETIME
 #endif
 #endif
 
@@ -88,9 +88,11 @@
 
 #if defined(BOOST_NO_CXX11_HDR_TUPLE) || defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
 #define BOOST_THREAD_NO_MAKE_UNIQUE_LOCKS
+#define BOOST_THREAD_NO_SYNCHRONIZE
 #elif defined _MSC_VER && _MSC_VER <= 1600
 // C++ features supported by VC++ 10 (aka 2010)
 #define BOOST_THREAD_NO_MAKE_UNIQUE_LOCKS
+#define BOOST_THREAD_NO_SYNCHRONIZE
 #endif
 
 /// BASIC_THREAD_ID
@@ -122,9 +124,7 @@
 
 #if ! defined BOOST_THREAD_DONT_USE_ATOMIC \
   && ! defined BOOST_THREAD_USES_ATOMIC
-//#if ! defined __PGIC__
 #define BOOST_THREAD_USES_ATOMIC
-//#endif
 //#define BOOST_THREAD_DONT_USE_ATOMIC
 #endif
 
@@ -322,6 +322,10 @@
 #endif
 #endif
 
+#if defined(BOOST_THREAD_PLATFORM_WIN32) && defined BOOST_THREAD_DONT_USE_DATETIME
+#undef BOOST_THREAD_DONT_USE_DATETIME
+#define BOOST_THREAD_USES_DATETIME
+#endif
 
 // BOOST_THREAD_PROVIDES_DEPRECATED_FEATURES_SINCE_V3_0_0 defined by default up to Boost 1.55
 // BOOST_THREAD_DONT_PROVIDE_DEPRECATED_FEATURES_SINCE_V3_0_0 defined by default up to Boost 1.55

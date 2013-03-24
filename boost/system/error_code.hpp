@@ -270,6 +270,12 @@ namespace boost
       const error_category &  category() const BOOST_SYSTEM_NOEXCEPT { return *m_cat; }
       std::string             message() const  { return m_cat->message(value()); }
 
+#   ifndef BOOST_NO_CXX11_EXPLICIT_CONVERSION_OPERATORS
+      explicit operator bool() const BOOST_SYSTEM_NOEXCEPT
+      {
+        return m_val != 0;
+      }
+#   else
       typedef void (*unspecified_bool_type)();
       static void unspecified_bool_true() {}
 
@@ -282,6 +288,7 @@ namespace boost
       {
         return m_val == 0;
       }
+#   endif
 
       // relationals:
       //  the more symmetrical non-member syntax allows enum
@@ -357,6 +364,12 @@ namespace boost
       error_condition         default_error_condition() const BOOST_SYSTEM_NOEXCEPT  { return m_cat->default_error_condition(value()); }
       std::string             message() const  { return m_cat->message(value()); }
 
+#   ifndef BOOST_NO_CXX11_EXPLICIT_CONVERSION_OPERATORS
+      explicit operator bool() const BOOST_SYSTEM_NOEXCEPT
+      {
+        return m_val != 0;
+      }
+#   else
       typedef void (*unspecified_bool_type)();
       static void unspecified_bool_true() {}
 
@@ -369,6 +382,7 @@ namespace boost
       {
         return m_val == 0;
       }
+#   endif 
 
       // relationals:
       inline friend bool operator==( const error_code & lhs,
@@ -388,7 +402,7 @@ namespace boost
           || (lhs.m_cat == rhs.m_cat && lhs.m_val < rhs.m_val);
       }
 
-      private:
+    private:
       int                     m_val;
       const error_category *  m_cat;
 
@@ -422,13 +436,13 @@ namespace boost
     //  non-member functions  ------------------------------------------------//
 
     inline bool operator!=( const error_code & lhs,
-                            const error_code & rhs )
+                            const error_code & rhs ) BOOST_SYSTEM_NOEXCEPT
     {
       return !(lhs == rhs);
     }
 
     inline bool operator!=( const error_condition & lhs,
-                            const error_condition & rhs )
+                            const error_condition & rhs ) BOOST_SYSTEM_NOEXCEPT
     {
       return !(lhs == rhs);
     }
@@ -480,11 +494,11 @@ namespace boost
     namespace errc
     {
       //  explicit conversion:
-      inline error_code make_error_code( errc_t e )
+      inline error_code make_error_code( errc_t e ) BOOST_SYSTEM_NOEXCEPT
         { return error_code( e, generic_category() ); }
 
       //  implicit conversion:
-      inline error_condition make_error_condition( errc_t e )
+      inline error_condition make_error_condition( errc_t e ) BOOST_SYSTEM_NOEXCEPT
         { return error_condition( e, generic_category() ); }
     }
 

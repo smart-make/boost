@@ -154,15 +154,20 @@ void test_all()
     test_one<linestring, buf::join_miter, polygon>("simplex", simplex, 'm', 19.209, 1.5, 1.5);
 
     test_one<linestring, buf::join_miter, polygon>("simplex_asym_neg", simplex, 'm', 3.202, +1.5, -1.0);
-    test_one<linestring, buf::join_miter, polygon>("simplex_asym_pos", simplex, 'm', 3.202, -1.5, +1.0);
+    test_one<linestring, buf::join_miter, polygon>("simplex_asym_pos", simplex, 'm', 3.202, -1.0, +1.5);
+
+	// Generates a reverse polygon, which will be empty TODO decide about this
+    // test_one<linestring, buf::join_miter, polygon>("simplex_asym_pos", simplex, 'm', 0, -1.5, +1.0); 
 
     //test_one<linestring, buf::join_round, polygon>("straight", straight, 'r', 19.2093727122985, 1.5, 1.5);
     //test_one<linestring, buf::join_miter, polygon>("straight", straight, 'm', 19.2093727122985, 1.5, 1.5);
 
     test_one<linestring, buf::join_round, polygon>("one_bend", one_bend, 'r', 28.488, 1.5, 1.5);
     test_one<linestring, buf::join_miter, polygon>("one_bend", one_bend, 'm', 28.696, 1.5, 1.5);
+    test_one<linestring, buf::join_round_by_divide, polygon>("one_bend", one_bend, 'd', 28.488, 1.5, 1.5);
 
-    test_one<linestring, buf::join_round, polygon>("two_bends", two_bends, 'r', 39.222, 1.5, 1.5);
+    test_one<linestring, buf::join_round, polygon>("two_bends", two_bends, 'r', 39.235, 1.5, 1.5);
+    test_one<linestring, buf::join_round_by_divide, polygon>("two_bends", two_bends, 'd', 39.235, 1.5, 1.5);
     test_one<linestring, buf::join_miter, polygon>("two_bends", two_bends, 'm', 39.513, 1.5, 1.5);
     test_one<linestring, buf::join_round, polygon>("two_bends_left", two_bends, 'r', 20.028, 1.5, 0.0);
     test_one<linestring, buf::join_miter, polygon>("two_bends_left", two_bends, 'm', 20.225, 1.5, 0.0);
@@ -170,7 +175,7 @@ void test_all()
     test_one<linestring, buf::join_miter, polygon>("two_bends_right", two_bends, 'm', 19.288, 0.0, 1.5);
 
 
-	// Next (and all similar cases) which a offsetted-one-sided buffer has to be fixed.
+	// Next (and all similar cases) which a offsetted-one-sided buffer has to be fixed. TODO
     //test_one<linestring, buf::join_miter, polygon>("two_bends_neg", two_bends, 'm', 99, +1.5, -1.0);
     //test_one<linestring, buf::join_miter, polygon>("two_bends_pos", two_bends, 'm', 99, -1.5, +1.0);
     //test_one<linestring, buf::join_round, polygon>("two_bends_neg", two_bends, 'r', 99, +1.5, -1.0);

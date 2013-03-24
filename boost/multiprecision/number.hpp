@@ -392,7 +392,7 @@ public:
    {
       BOOST_STATIC_ASSERT_MSG(number_category<Backend>::value == number_kind_integer, "The left-shift operation is only valid for integer types");
       detail::check_shift_range(val, mpl::bool_<(sizeof(V) > sizeof(std::size_t))>(), is_signed<V>());
-      eval_left_shift(m_backend, canonical_value(val));
+      eval_left_shift(m_backend, static_cast<std::size_t>(canonical_value(val)));
       return *this;
    }
 
@@ -401,7 +401,7 @@ public:
    {
       BOOST_STATIC_ASSERT_MSG(number_category<Backend>::value == number_kind_integer, "The right-shift operation is only valid for integer types");
       detail::check_shift_range(val, mpl::bool_<(sizeof(V) > sizeof(std::size_t))>(), is_signed<V>());
-      eval_right_shift(m_backend, canonical_value(val));
+      eval_right_shift(m_backend, static_cast<std::size_t>(canonical_value(val)));
       return *this;
    }
 
@@ -539,16 +539,6 @@ public:
       return *this;
    }
    //
-   // Use in boolean context:
-   //
-   typedef bool (self_type::*unmentionable_type)()const;
-
-   BOOST_MP_FORCEINLINE operator unmentionable_type()const
-   {
-      return is_zero() ? 0 : &self_type::is_zero;
-   }
-
-   //
    // swap:
    //
    BOOST_MP_FORCEINLINE void swap(self_type& other) BOOST_NOEXCEPT
@@ -599,8 +589,11 @@ public:
       convert_to_imp(&result);
       return result;
    }
+   //
+   // Use in boolean context, and explicit conversion operators:
+   //
 #ifndef BOOST_NO_CXX11_EXPLICIT_CONVERSION_OPERATORS
-#if defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ < 7)
+#  if defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ < 7)
    //
    // Horrible workaround for gcc-4.6.x which always prefers the template
    // operator bool() rather than the non-template operator when converting to
@@ -617,19 +610,25 @@ public:
    {
       return this->template convert_to<T>();
    }
-#else
+#  else
    template <class T>
    explicit operator T()const
    {
       return this->template convert_to<T>();
    }
-   explicit operator bool()const
+   BOOST_MP_FORCEINLINE explicit operator bool()const
    {
-      using default_ops::eval_is_zero;
-      return !eval_is_zero(backend());
+      return !is_zero();
    }
    explicit operator void()const {}
-#endif
+#  endif
+#else
+   typedef bool (self_type::*unmentionable_type)()const;
+
+   BOOST_MP_FORCEINLINE operator unmentionable_type()const
+   {
+      return is_zero() ? 0 : &self_type::is_zero;
+   }
 #endif
    //
    // Default precision:
@@ -1114,7 +1113,7 @@ private:
       BOOST_STATIC_ASSERT_MSG(number_category<Backend>::value == number_kind_integer, "The right shift operation is only valid for integer types");
       using default_ops::eval_right_shift;
       detail::check_shift_range(val, mpl::bool_<(sizeof(Val) > sizeof(std::size_t))>(), is_signed<Val>());
-      eval_right_shift(m_backend, canonical_value(e.value()), val);
+      eval_right_shift(m_backend, canonical_value(e.value()), static_cast<std::size_t>(val));
    }
 
    template <class Exp, class Val>
@@ -1123,7 +1122,7 @@ private:
       BOOST_STATIC_ASSERT_MSG(number_category<Backend>::value == number_kind_integer, "The left shift operation is only valid for integer types");
       using default_ops::eval_left_shift;
       detail::check_shift_range(val, mpl::bool_<(sizeof(Val) > sizeof(std::size_t))>(), is_signed<Val>());
-      eval_left_shift(m_backend, canonical_value(e.value()), val);
+      eval_left_shift(m_backend, canonical_value(e.value()), static_cast<std::size_t>(val));
    }
 
    template <class Exp, class Val, class Tag>
@@ -1133,7 +1132,7 @@ private:
       using default_ops::eval_right_shift;
       self_type temp(e);
       detail::check_shift_range(val, mpl::bool_<(sizeof(Val) > sizeof(std::size_t))>(), is_signed<Val>());
-      eval_right_shift(m_backend, temp.backend(), val);
+      eval_right_shift(m_backend, temp.backend(), static_cast<std::size_t>(val));
    }
 
    template <class Exp, class Val, class Tag>
@@ -1143,7 +1142,7 @@ private:
       using default_ops::eval_left_shift;
       self_type temp(e);
       detail::check_shift_range(val, mpl::bool_<(sizeof(Val) > sizeof(std::size_t))>(), is_signed<Val>());
-      eval_left_shift(m_backend, temp.backend(), val);
+      eval_left_shift(m_backend, temp.backend(), static_cast<std::size_t>(val));
    }
 
    template <class Exp>
@@ -1764,26 +1763,12 @@ inline multiprecision::number<T, ExpressionTemplates> denominator(const rational
    return a.denominator();
 }
 
-namespace numeric { namespace ublas {
-//
-// uBlas interoperability:
-//
-template<class V>
-class sparse_vector_element;
-
-template <class V, class Backend, multiprecision::expression_template_option ExpressionTemplates>
-inline bool operator == (const sparse_vector_element<V>& a, const ::boost::multiprecision::number<Backend, ExpressionTemplates>& b)
-{
-typedef typename sparse_vector_element<V>::const_reference ref_type;
-   return static_cast<ref_type>(a) == b;
-}
-
-}} // namespaces
-
 #ifdef BOOST_MSVC
 #pragma warning(pop)
 #endif
 
 } // namespaces
+
+#include <boost/multiprecision/detail/ublas_interop.hpp>
 
 #endif

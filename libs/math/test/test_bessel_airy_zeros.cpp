@@ -26,7 +26,6 @@
 
 #include <typeinfo>
 
-
 // #include <boost/math/tools/
 //
 // DESCRIPTION:
@@ -321,10 +320,10 @@ Table[N[BesselJZero[7001/19, n], 50], {n, 19, 20, 1}]
 
    // BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(v, 1), static_cast<RealType>(43.803165820025277290601047312311146608776920513241L), tolerance);
   //  BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(static_cast<RealType>(-39) - static_cast<RealType>(1)/3, 1), static_cast<RealType>(43.803165820025277290601047312311146608776920513241L), tolerance);
-    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(v, 2), static_cast<RealType>(49.624678304306778749502719837270544976331123155017L), tolerance);
-    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(static_cast<RealType>(-39) - static_cast<RealType>(0.333333333333333333333333333333333333333333333), 5), static_cast<RealType>(62.911281619408963609400485687996804820400102193455L), tolerance);
-    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(static_cast<RealType>(-39) - static_cast<RealType>(0.333333333333333333333333333333333333333333333), 10), static_cast<RealType>(81.705998611506506523381866527389118594062841737382L), tolerance);
-    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(static_cast<RealType>(-39) - static_cast<RealType>(0.333333333333333333333333333333333333333333333), 20), static_cast<RealType>(116.05368337161392034833932554892349580959931408963L), tolerance);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(v, 2), static_cast<RealType>(49.624678304306778749502719837270544976331123155017L), tolerance * 4);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(static_cast<RealType>(-39) - static_cast<RealType>(0.333333333333333333333333333333333333333333333L), 5), static_cast<RealType>(62.911281619408963609400485687996804820400102193455L), tolerance * 4);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(static_cast<RealType>(-39) - static_cast<RealType>(0.333333333333333333333333333333333333333333333L), 10), static_cast<RealType>(81.705998611506506523381866527389118594062841737382L), tolerance * 4);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(static_cast<RealType>(-39) - static_cast<RealType>(0.333333333333333333333333333333333333333333333L), 20), static_cast<RealType>(116.05368337161392034833932554892349580959931408963L), tolerance * 4);
 
 
   // Table[N[BesselJZero[-1/3, n], 51], {n, 1, 20, 1}]
@@ -349,7 +348,7 @@ Table[N[BesselJZero[7001/19, n], 50], {n, 19, 20, 1}]
    // std::cout << "v = " << v << std::endl; //   v = -3.9999989999999999
 
     // 1st is much less accurate.
-    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(v, 1), static_cast<RealType>(0.666908567552422764702292353801313970109968787260547L), tolerance * 100000);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(v, 1), static_cast<RealType>(0.666908567552422764702292353801313970109968787260547L), tolerance * 500000);
     BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(v, 2), static_cast<RealType>(7.58834489983121936102504707121493271448122800440112L), tolerance);
     BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(v, 5), static_cast<RealType>(17.6159678964372778134202353240221384945968807948928L), tolerance);
     BOOST_CHECK_CLOSE_FRACTION(cyl_bessel_j_zero(v, 20), static_cast<RealType>(65.0669968910414433560468307554730940098734494938136L), tolerance);
@@ -474,8 +473,8 @@ n |
   5 | 17.818455232945520262553239064736739443380352162752
   */
 
-    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(3), 1), static_cast<RealType>(4.5270246611496438503700268671036276386651555486109L), tolerance);
-    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(3), 2), static_cast<RealType>(8.0975537628604907044022139901128042290432231369075L), tolerance);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(3), 1), static_cast<RealType>(4.5270246611496438503700268671036276386651555486109L), tolerance * 2);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(3), 2), static_cast<RealType>(8.0975537628604907044022139901128042290432231369075L), tolerance * 2);
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(3), 3), static_cast<RealType>(11.396466739595866739252048190629504945984969192535L), tolerance);
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(3), 4), static_cast<RealType>(14.623077742393873174076722507725200649352970569915L), tolerance);
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(3), 5), static_cast<RealType>(17.818455232945520262553239064736739443380352162752L), tolerance);
@@ -486,9 +485,6 @@ n |
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-3), 3), static_cast<RealType>(11.396466739595866739252048190629504945984969192535L), tolerance);
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-3), 4), static_cast<RealType>(14.623077742393873174076722507725200649352970569915L), tolerance);
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-3), 5), static_cast<RealType>(17.818455232945520262553239064736739443380352162752L), tolerance);
-
-
-
 
   { // Repeat rest using multiple zeros version.
     std::vector<RealType> zeros;
@@ -508,7 +504,6 @@ n |
 13 | 41.870269811145814760551599481942750124112093564643
 17 | 54.449180021209532654553613813754733514317929678038
   */
-
 
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(219)/100, 1), static_cast<RealType>(3.6039149425338727979151181355741147312162055042157L), tolerance);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(219)/100, 5), static_cast<RealType>(16.655399111666833825247894251535326778980614938275L), tolerance);
@@ -536,7 +531,7 @@ n |
   16 | 47.913467031941494147962476920863688176374357572509
   */
 
-  BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(1)/1000, 1), static_cast<RealType>(0.89502371604431360670577815537297733265776195646969L), tolerance);
+  BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(1)/1000, 1), static_cast<RealType>(0.89502371604431360670577815537297733265776195646969L), 2 * tolerance);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(1)/1000, 6), static_cast<RealType>(16.5024924909547168509934567036621376281481828927870L), tolerance);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(1)/1000, 11), static_cast<RealType>(32.206774708309182755790609144739319753463907110990L), tolerance);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(1)/1000, 16), static_cast<RealType>(47.913467031941494147962476920863688176374357572509L), tolerance);
@@ -552,7 +547,6 @@ n |
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(71)/19, 6), static_cast<RealType>(22.051823727778538215953091664153117627848857279151L), tolerance);
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(71)/19, 11), static_cast<RealType>(37.890091170552491176745048499809370107665221628364L), tolerance);
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(71)/19, 16), static_cast<RealType>(53.651270581421816017744203789836444968181687858095L), tolerance);
-
 
   /* Order 7001/19: A medium-large order, small enough to retain moderate efficiency of calculation.
 
@@ -601,7 +595,7 @@ n |
   16 | 51.014128749483902310217774804582826908060740157564
   */
 
-  BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-2), 1), static_cast<RealType>(3.3842417671495934727014260185379031127323883259329L), tolerance);
+  BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-2), 1), static_cast<RealType>(3.3842417671495934727014260185379031127323883259329L), tolerance * 3);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-2), 6), static_cast<RealType>(19.539039990286384411511740683423888947393156497603L), tolerance * 3);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-2), 11), static_cast<RealType>(35.289793869635804143323234828826075805683602368473L), tolerance * 3);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-2), 16), static_cast<RealType>(51.014128749483902310217774804582826908060740157564L), tolerance * 3);
@@ -652,8 +646,8 @@ n |
 16 | 47.3871543280673235432396563497681616285970326011211
 */
 
-    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/3, 1), static_cast<RealType>(0.364442931311036254896373762996743259918847602789703L), tolerance * 4);
-    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/3, 6), static_cast<RealType>(15.9741013584105984633772025789145590038676373673203L), tolerance * 4);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/3, 1), static_cast<RealType>(0.364442931311036254896373762996743259918847602789703L), tolerance * 10);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/3, 6), static_cast<RealType>(15.9741013584105984633772025789145590038676373673203L), tolerance * 10);
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/3, 11), static_cast<RealType>(31.6799168750213003020847708007848147516190373648194L), tolerance * 4);
     BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/3, 16), static_cast<RealType>(47.3871543280673235432396563497681616285970326011211L), tolerance * 4);
 
@@ -702,10 +696,7 @@ Calculated using cpp_dec_float_50
   25.610441910658973993163304295977415738578740550282
   28.786066313968546073981640755202085944374967166411
   31.954857624676521867923579695253822854717613513587
-
-
     */
-    
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-3) -static_cast<RealType>(9999)/10000, 1), static_cast<RealType>(5.64546089250283694562642537496601708928630550185069L), tolerance * 4);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-3) -static_cast<RealType>(9999)/10000, 2), static_cast<RealType>(9.36184180108088288881787970896747209376324330610979L), tolerance * 4);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-3) -static_cast<RealType>(9999)/10000, 3), static_cast<RealType>(12.7303431758275183078115963473808796340618061355885L), tolerance * 4);
@@ -716,6 +707,33 @@ Calculated using cpp_dec_float_50
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-3) -static_cast<RealType>(9999)/10000, 7), static_cast<RealType>(25.610441910658973993163304295977415738578740550282L), tolerance * 4);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-3) -static_cast<RealType>(9999)/10000, 8), static_cast<RealType>(28.786066313968546073981640755202085944374967166411L), tolerance * 4);
   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-3) -static_cast<RealType>(9999)/10000, 9), static_cast<RealType>(31.954857624676521867923579695253822854717613513587L), tolerance * 4);
+
+
+// Plot[BesselYZero[-7 - v, 1], {v, 0, 1}]  shows discontinuity at the mid-point between integers.
+
+/* Table[N[BesselYZero[-7 - (4999/10000), n], 51], {n, 1, 4, 1}]
+  1 | 3.59209698655443348407622952525352410710983745802573
+  2 | 11.6573245781899449398248761667833391837824916603434
+  3 | 15.4315262542144355217979771618575628291362029097236
+  4 | 18.9232143766706670333395285892576635207736306576135
+*/
+
+/* Table[N[BesselYZero[-7 - (5001/10000), n], 51], {n, 1, 4, 1}]
+  1 | 11.6567397956147934678808863468662427054245897492445
+  2 | 15.4310521624769624067699131497395566368341140531722
+  3 | 18.9227840182910629037411848072684247564491740961847
+  4 | 22.2951449444372591060253508661432751300205474374696
+*/
+
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) -static_cast<RealType>(4999)/10000, 1), static_cast<RealType>(3.59209698655443348407622952525352410710983745802573L), tolerance * 2000);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) -static_cast<RealType>(4999)/10000, 2), static_cast<RealType>(11.6573245781899449398248761667833391837824916603434L), tolerance * 100);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) -static_cast<RealType>(4999)/10000, 3), static_cast<RealType>(15.4315262542144355217979771618575628291362029097236L), tolerance * 100);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) -static_cast<RealType>(4999)/10000, 4), static_cast<RealType>(18.9232143766706670333395285892576635207736306576135L), tolerance * 100);
+
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) -static_cast<RealType>(5001)/10000, 1), static_cast<RealType>(11.6567397956147934678808863468662427054245897492445L), tolerance * 100);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) -static_cast<RealType>(5001)/10000, 2), static_cast<RealType>(15.4310521624769624067699131497395566368341140531722L), tolerance * 100);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) -static_cast<RealType>(5001)/10000, 3), static_cast<RealType>(18.9227840182910629037411848072684247564491740961847L), tolerance * 100);
+    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) -static_cast<RealType>(5001)/10000, 4), static_cast<RealType>(22.2951449444372591060253508661432751300205474374696L), tolerance * 100);
 
   //BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-(static_cast<RealType>(-3)-static_cast<RealType>(99)/100), 5), 
   //  cyl_neumann_zero(+(static_cast<RealType>(-3)-static_cast<RealType>(99)/100), 5), tolerance * 100);
@@ -785,19 +803,13 @@ Calculated using cpp_dec_float_50
   4 | 10.2223642239960815612515914411615233651316361060338
   5 | 13.3611166636685056799674772287389749065996094266976
 */
-  BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(1)/81799, 2), static_cast<RealType>(3.95769748213950546166537901626409026826595687994956L), tolerance * 4);
-  BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(1)/81799, 3), static_cast<RealType>(7.08607021707716361104064671367526817399129653285580L), tolerance * 4);
-
-
-
+   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(1)/81799, 2), static_cast<RealType>(3.95769748213950546166537901626409026826595687994956L), tolerance * 4);
+   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(1)/81799, 3), static_cast<RealType>(7.08607021707716361104064671367526817399129653285580L), tolerance * 4);
    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/81799, 4), static_cast<RealType>(10.2223258629823064789904339889550588869985272176335L), tolerance * 4);
    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/81799, 5), static_cast<RealType>(13.3610782840659145864973521693322670264135672594988L), tolerance * 4);
    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/81799, 6), static_cast<RealType>(16.5009032471619898684110089652474861084220781491575L), tolerance * 4);
    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(-static_cast<RealType>(1)/81799, 9), static_cast<RealType>(25.9229384536173175152381652048590136247796591153244L), tolerance * 4);
-
-
-    BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) - static_cast<RealType>(1)/3, 1), static_cast<RealType>(7.3352783956690540155848592759652828459644819344081L), tolerance * 1000);
-
+   BOOST_CHECK_CLOSE_FRACTION(cyl_neumann_zero(static_cast<RealType>(-7) - static_cast<RealType>(1)/3, 1), static_cast<RealType>(7.3352783956690540155848592759652828459644819344081L), tolerance * 1000);
 
   // Test Data for airy_ai_zero and airy_bi_zero functions.
 
@@ -820,8 +832,8 @@ Calculated using cpp_dec_float_50
     // BOOST_CHECK_EQUAL(airy_ai_zero<RealType>(-1), 0); //  warning C4245: 'argument' : conversion from 'int' to 'unsigned int', signed/unsigned mismatch
   }
 
-  BOOST_CHECK_CLOSE_FRACTION(airy_ai_zero<RealType>(std::numeric_limits<unsigned>::max()), -7426781.75639318326103, tolerance);
-  BOOST_CHECK_CLOSE_FRACTION(airy_ai_zero<RealType>(std::numeric_limits<int>::max()), -4678579.33301973093739, tolerance);
+  BOOST_CHECK_CLOSE_FRACTION(airy_ai_zero<RealType>(std::numeric_limits<unsigned>::max()), -static_cast<RealType>(7426781.75639318326103L), tolerance);
+  BOOST_CHECK_CLOSE_FRACTION(airy_ai_zero<RealType>(std::numeric_limits<int>::max()), -static_cast<RealType>(4678579.33301973093739L), tolerance);
 
   // Can't abuse with infinity because won't compile - no conversion.
   //if (std::numeric_limits<RealType>::has_infinity)
@@ -831,7 +843,7 @@ Calculated using cpp_dec_float_50
 
   // WolframAlpha  Table[N[AiryAiZero[n], 51], {n, 1, 20, 1}]
 
-  BOOST_CHECK_CLOSE_FRACTION(airy_ai_zero<RealType>(1), static_cast<RealType>(-2.33810741045976703848919725244673544063854014567239L), tolerance);
+  BOOST_CHECK_CLOSE_FRACTION(airy_ai_zero<RealType>(1), static_cast<RealType>(-2.33810741045976703848919725244673544063854014567239L), tolerance * 2);
   BOOST_CHECK_CLOSE_FRACTION(airy_ai_zero<RealType>(2), static_cast<RealType>(-4.08794944413097061663698870145739106022476469910853L), tolerance);
   BOOST_CHECK_CLOSE_FRACTION(airy_ai_zero<RealType>(3), static_cast<RealType>(-5.52055982809555105912985551293129357379721428061753L), tolerance);
   BOOST_CHECK_CLOSE_FRACTION(airy_ai_zero<RealType>(4), static_cast<RealType>(-6.78670809007175899878024638449617696605388247739349L), tolerance);
@@ -888,8 +900,8 @@ Calculated using cpp_dec_float_50
     // check airy_bi_zero<RealType>(-1) == 0 has failed [-7.42678e+006 != 0]
   }
 
-  BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(std::numeric_limits<unsigned>::max()), -7426781.75581678913522, tolerance);
-  BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(std::numeric_limits<int>::max()), -4678579.33229351984573, tolerance);
+  BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(std::numeric_limits<unsigned>::max()), -7426781.75581678913522, tolerance * 300);
+  BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(std::numeric_limits<int>::max()), -4678579.33229351984573, tolerance * 300);
 
   // Can't abuse with infinity because won't compile - no conversion.
   //if (std::numeric_limits<RealType>::has_infinity)
@@ -898,7 +910,7 @@ Calculated using cpp_dec_float_50
   //}
 
   // Table[N[AiryBiZero[n], 51], {n, 1, 20, 1}]
-  BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(1), static_cast<RealType>(-1.17371322270912792491997996247390210454364638917570L), tolerance);
+  BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(1), static_cast<RealType>(-1.17371322270912792491997996247390210454364638917570L), tolerance * 2);
   BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(2), static_cast<RealType>(-3.27109330283635271568022824016641380630093596910028L), tolerance);
   BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(3), static_cast<RealType>(-4.83073784166201593266770933990517817696614261732301L), tolerance);
   BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(4), static_cast<RealType>(-6.16985212831025125983336452055593667996554943427563L), tolerance);
@@ -931,6 +943,19 @@ Calculated using cpp_dec_float_50
   BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(1000000000), static_cast<RealType>(-2.81078366499651725023268820158218492845371527054171E+6L), tolerance);
   BOOST_CHECK_CLOSE_FRACTION(airy_bi_zero<RealType>(1000000001), static_cast<RealType>(-2.81078366687037302799011557215619265502627118526716E+6L), tolerance);
 
+  // Check the multi-root versions.
+  {
+    unsigned int n_roots = 1U;
+    std::vector<RealType> roots;
+    boost::math::airy_ai_zero<RealType>(2U, n_roots, std::back_inserter(roots));
+    BOOST_CHECK_CLOSE_FRACTION(roots[0], static_cast<RealType>(-4.08794944413097061663698870145739106022476469910853L), tolerance);
+  }
+  {
+    unsigned int n_roots = 1U;
+    std::vector<RealType> roots;
+    boost::math::airy_bi_zero<RealType>(2U, n_roots, std::back_inserter(roots));
+    BOOST_CHECK_CLOSE_FRACTION(roots[0], static_cast<RealType>(-3.27109330283635271568022824016641380630093596910028L), tolerance);
+  }
 } // template <class RealType> void test_spots(RealType)
 
   #include <boost/multiprecision/cpp_dec_float.hpp>

@@ -830,11 +830,11 @@ class deque : protected deque_base<T, Allocator>
       if (len > size()) {
          FwdIt mid = first;
          std::advance(mid, this->size());
-         boost::copy_or_move(first, mid, begin());
+         boost::container::copy(first, mid, begin());
          this->insert(this->cend(), mid, last);
       }
       else{
-         this->erase(boost::copy_or_move(first, last, this->begin()), cend());
+         this->erase(boost::container::copy(first, last, this->begin()), cend());
       }
    }
    #endif
@@ -1721,11 +1721,11 @@ class deque : protected deque_base<T, Allocator>
             this->members_.m_finish = new_finish;
          }
          else{
-            pos = this->members_.m_finish - elemsafter;
+            pos = old_finish - elemsafter;
             if (elemsafter >= n) {
-               iterator finish_n = this->members_.m_finish - difference_type(n);
+               iterator finish_n = old_finish - difference_type(n);
                ::boost::container::uninitialized_move_alloc
-                  (this->alloc(), finish_n, this->members_.m_finish, this->members_.m_finish);
+                  (this->alloc(), finish_n, old_finish, old_finish);
                this->members_.m_finish = new_finish;
                boost::move_backward(pos, finish_n, old_finish);
                interf.copy_n_and_update(pos, n);
@@ -1733,25 +1733,17 @@ class deque : protected deque_base<T, Allocator>
             else {
                const size_type raw_gap = n - elemsafter;
                ::boost::container::uninitialized_move_alloc
-                  (this->alloc(), pos, old_finish, this->members_.m_finish + raw_gap);
+                  (this->alloc(), pos, old_finish, old_finish + raw_gap);
                BOOST_TRY{
+                  interf.copy_n_and_update(pos, elemsafter);
                   interf.uninitialized_copy_n_and_update(old_finish, raw_gap);
                }
                BOOST_CATCH(...){
-                  this->priv_destroy_range(this->members_.m_finish, this->members_.m_finish + (old_finish - pos));
+                  this->priv_destroy_range(old_finish, old_finish + elemsafter);
                   BOOST_RETHROW
                }
                BOOST_CATCH_END
                this->members_.m_finish = new_finish;
-               interf.copy_n_and_update(pos, elemsafter);
-   /*
-               interf.uninitialized_copy_some_and_update(old_finish, elemsafter, false);
-               this->members_.m_finish += n-elemsafter;
-               ::boost::container::uninitialized_move_alloc
-                  (this->alloc(), pos, old_finish, this->members_.m_finish);
-               this->members_.m_finish = new_finish;
-               interf.copy_remaining_to(pos);
-   */
             }
          }
       }
@@ -1840,12 +1832,10 @@ class deque : protected deque_base<T, Allocator>
                ++cur_node) {
             FwdIt mid = first;
             std::advance(mid, this->s_buffer_size());
-            ::boost::container::uninitialized_copy_or_move_alloc
-               (this->alloc(), first, mid, *cur_node);
+            ::boost::container::uninitialized_copy_alloc(this->alloc(), first, mid, *cur_node);
             first = mid;
          }
-         ::boost::container::uninitialized_copy_or_move_alloc
-            (this->alloc(), first, last, this->members_.m_finish.m_first);
+         ::boost::container::uninitialized_copy_alloc(this->alloc(), first, last, this->members_.m_finish.m_first);
       }
       BOOST_CATCH(...){
          this->priv_destroy_range(this->members_.m_start, iterator(*cur_node, cur_node));

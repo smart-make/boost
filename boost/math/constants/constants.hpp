@@ -14,7 +14,9 @@
 #pragma warning(push)
 #pragma warning(disable: 4127 4701)
 #endif
+#ifndef BOOST_MATH_NO_LEXICAL_CAST
 #include <boost/lexical_cast.hpp>
+#endif
 #ifdef BOOST_MSVC
 #pragma warning(pop)
 #endif
@@ -22,6 +24,7 @@
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/int.hpp>
 #include <boost/type_traits/is_convertible.hpp>
+
 
 namespace boost{ namespace math
 {
@@ -46,7 +49,10 @@ namespace boost{ namespace math
       construct_from_float = 1,
       construct_from_double = 2,
       construct_from_long_double = 3,
-      construct_from_string = 4
+      construct_from_string = 4,
+      construct_from_float128 = 5,
+      // Must be the largest value above:
+      construct_max = construct_from_float128
    };
 
    //
@@ -63,6 +69,9 @@ namespace boost{ namespace math
       typedef typename policies::precision<float, Policy>::type t2;
       typedef typename policies::precision<double, Policy>::type t3;
       typedef typename policies::precision<long double, Policy>::type t4;
+#ifdef BOOST_MATH_USE_FLOAT128
+      typedef mpl::int_<113> t5;
+#endif
    public:
       typedef typename mpl::if_<
          mpl::and_<boost::is_convertible<float, Real>, mpl::bool_< t1::value <= t2::value>, mpl::bool_<0 != t1::value> >,
@@ -73,11 +82,23 @@ namespace boost{ namespace math
             typename mpl::if_<
                mpl::and_<boost::is_convertible<long double, Real>, mpl::bool_< t1::value <= t4::value>, mpl::bool_<0 != t1::value> >,
                mpl::int_<construct_from_long_double>,
+#ifdef BOOST_MATH_USE_FLOAT128
+               typename mpl::if_<
+                  mpl::and_<boost::is_convertible<__float128, Real>, mpl::bool_< t1::value <= t5::value>, mpl::bool_<0 != t1::value> >,
+                  mpl::int_<construct_from_float128>,
+                  typename mpl::if_<
+                     mpl::and_<mpl::bool_< t1::value <= max_string_digits>, mpl::bool_<0 != t1::value> >,
+                     mpl::int_<construct_from_string>,
+                     mpl::int_<t1::value>
+                  >::type
+               >::type
+#else
                typename mpl::if_<
                   mpl::and_<mpl::bool_< t1::value <= max_string_digits>, mpl::bool_<0 != t1::value> >,
                   mpl::int_<construct_from_string>,
                   mpl::int_<t1::value>
                >::type
+#endif
             >::type
          >::type
       >::type type;
@@ -98,14 +119,19 @@ namespace boost{ namespace math
       {
          typedef typename construction_traits<Real, Policy>::type construct_type;
          typedef typename mpl::if_c<
-            (construct_type::value >= construct_from_string),
+            (construct_type::value == construct_from_string) || (construct_type::value > construct_max),
             const Real&, Real>::type type;
       };
 
       template <class Real>
       Real convert_from_string(const char* p, const mpl::false_&)
       {
+#ifdef BOOST_MATH_NO_LEXICAL_CAST
+         // This function should not compile, we don't have the necesary functionality to support it:
+         BOOST_STATIC_ASSERT(sizeof(Real) == 0);
+#else
          return boost::lexical_cast<Real>(p);
+#endif
       }
       template <class Real>
       const char* convert_from_string(const char* p, const mpl::true_&)
@@ -167,6 +193,14 @@ namespace boost{ namespace math
 
    }
 
+#ifdef BOOST_MATH_USE_FLOAT128
+#  define BOOST_MATH_FLOAT128_CONSTANT_OVERLOAD(x) \
+   static inline BOOST_CONSTEXPR T get(const mpl::int_<construct_from_float128>&)\
+   { return BOOST_JOIN(x, Q); }
+#else
+#  define BOOST_MATH_FLOAT128_CONSTANT_OVERLOAD(x)
+#endif
+
    #define BOOST_DEFINE_MATH_CONSTANT(name, x, y)\
    namespace detail{\
    template <class T> struct BOOST_JOIN(constant_, name){\
@@ -197,6 +231,7 @@ namespace boost{ namespace math
    { return x; }\
    static inline BOOST_CONSTEXPR T get(const mpl::int_<construct_from_long_double>&)\
    { return BOOST_JOIN(x, L); }\
+   BOOST_MATH_FLOAT128_CONSTANT_OVERLOAD(x) \
    template <int N> static inline const T& get(const mpl::int_<N>&)\
    {\
       constant_initializer2<T, N, & BOOST_JOIN(constant_, name)<T>::template get_from_compute<N> >::force_instantiate();\
@@ -247,6 +282,7 @@ namespace boost{ namespace math
   BOOST_DEFINE_MATH_CONSTANT(root_pi, 1.772453850905516027298167483341145182e+00, "1.77245385090551602729816748334114518279754945612238712821380778985291128459103218137495065673854466541622682362e+00")
   BOOST_DEFINE_MATH_CONSTANT(root_half_pi, 1.253314137315500251207882642405522626e+00, "1.25331413731550025120788264240552262650349337030496915831496178817114682730392098747329791918902863305800498633e+00")
   BOOST_DEFINE_MATH_CONSTANT(root_two_pi, 2.506628274631000502415765284811045253e+00, "2.50662827463100050241576528481104525300698674060993831662992357634229365460784197494659583837805726611600997267e+00")
+  BOOST_DEFINE_MATH_CONSTANT(log_root_two_pi, 9.189385332046727417803297364056176398e-01, "9.18938533204672741780329736405617639861397473637783412817151540482765695927260397694743298635954197622005646625e-01")
   BOOST_DEFINE_MATH_CONSTANT(one_div_root_pi, 5.641895835477562869480794515607725858e-01, "5.64189583547756286948079451560772585844050629328998856844085721710642468441493414486743660202107363443028347906e-01")
   BOOST_DEFINE_MATH_CONSTANT(root_one_div_pi, 5.641895835477562869480794515607725858e-01, "5.64189583547756286948079451560772585844050629328998856844085721710642468441493414486743660202107363443028347906e-01")
   BOOST_DEFINE_MATH_CONSTANT(pi_minus_three, 1.415926535897932384626433832795028841e-01, "1.41592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513e-01")

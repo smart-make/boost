@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="multi_polygon_buffer"
 	ProjectGUID="{1E74F110-996E-44DD-A2EC-5D3B55425903}"
 	RootNamespace="multi_polygon_buffer"
