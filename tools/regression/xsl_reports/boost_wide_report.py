@@ -48,25 +48,17 @@ class file_info:
 # Find the mod time from unix format directory listing line
 #
 
-def get_date( words ):
-    date = words[ 5: -1 ]
-    t = time.localtime()
+def get_date( f, words ):
+    # f is an ftp object
 
-    month_names = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ]
-
-    year = time.localtime()[0] # If year is not secified is it the current year
-    month = month_names.index( date[0] ) + 1
-    day = int( date[1] )
-    hours = 0 
-    minutes = 0
-
-    if  date[2].find( ":" ) != -1:
-        ( hours, minutes ) = [ int(x) for x in date[2].split( ":" ) ]
-    else:
-        # there is no way to get seconds for not current year dates
-        year = int( date[2] )
-
-    return ( year, month, day, hours, minutes, 0, 0, 0, 0 )
+    (response, modtime) = f.sendcmd('MDTM %s' % words[-1]).split( None, 2 )
+    year = int( modtime[0:4] )
+    month = int( modtime[4:6] )
+    day = int( modtime[6:8] )
+    hours = int( modtime[8:10] )
+    minutes = int( modtime[10:12] )
+    seconds = int( modtime[12:14] )
+    return ( year, month, day, hours, minutes, seconds, 0, 0, 0)
 
 def list_ftp( f ):
     # f is an ftp object
@@ -80,7 +72,7 @@ def list_ftp( f ):
     word_lines = [ x.split( None, 8 ) for x in lines ]
 
     # we don't need directories
-    result = [ file_info( l[-1], None, get_date( l ) ) for l in word_lines if l[0][0] != "d" ]
+    result = [ file_info( l[-1], int( l[4] ), get_date( f, l ) ) for l in word_lines if l[0][0] != "d" ]
     for f in result:
         utils.log( "    %s" % f )
     return result
@@ -90,10 +82,10 @@ def list_dir( dir ):
     result = []
     for file_path in glob.glob( os.path.join( dir, "*.zip" ) ):
         if os.path.isfile( file_path ):
-            mod_time = time.localtime( os.path.getmtime( file_path ) )
+            mod_time = time.gmtime( os.path.getmtime( file_path ) )
             mod_time = ( mod_time[0], mod_time[1], mod_time[2], mod_time[3], mod_time[4], mod_time[5], 0, 0, mod_time[8] )
-            # no size (for now)
-            result.append( file_info( os.path.basename( file_path ), None, mod_time ) )
+            size = os.path.getsize( file_path )
+            result.append( file_info( os.path.basename( file_path ), size, mod_time ) )
     for fi in result:
         utils.log( "    %s" % fi )
     return result
@@ -104,13 +96,34 @@ def find_by_name( d, name ):
             return dd
     return None
 
+# Proof:
+# gmtime(result) = time_tuple
+# mktime(gmtime(result)) = mktime(time_tuple)
+# correction = mktime(gmtime(result)) - result
+# result = mktime(time_tuple) - correction
+def mkgmtime(time_tuple):
+    # treat the tuple as if it were local time
+    local = time.mktime(time_tuple)
+    # calculate the correction to get gmtime
+    old_correction = 0
+    correction = time.mktime(time.gmtime(local)) - local
+    result = local
+    # iterate until the correction doesn't change
+    while correction != old_correction:
+        old_correction = correction
+        correction = time.mktime(time.gmtime(result)) - result
+        result = local - correction
+    return result
+
 def diff( source_dir_content, destination_dir_content ):
     utils.log( "Finding updated files" )
     result = ( [], [] ) # ( changed_files, obsolete_files )
     for source_file in source_dir_content:
         found = find_by_name( destination_dir_content, source_file.name )
         if found is None: result[0].append( source_file.name )
-        elif time.mktime( found.date ) != time.mktime( source_file.date ): result[0].append( source_file.name )
+        elif time.mktime( found.date ) != time.mktime( source_file.date ) or \
+             found.size != source_file.size:
+            result[0].append( source_file.name )
         else:
             pass
     for destination_file in destination_dir_content:
@@ -362,7 +375,7 @@ def ftp_task( site, site_path , destination ):
             f.retrbinary( 'RETR %s' % source, result.write )
             result.close()
             mod_date = find_by_name( source_content, source ).date
-            m = time.mktime( mod_date )
+            m = mkgmtime( mod_date )
             os.utime( os.path.join( destination, source ), ( m, m ) )
 
         for obsolete in d[1]:
@@ -470,6 +483,7 @@ def execute_tasks(
         , dont_collect_logs
         , expected_results_file
         , failures_markup_file
+        , report_executable
         ):
 
     incoming_dir = os.path.join( results_dir, 'incoming', tag )
@@ -489,6 +503,30 @@ def execute_tasks(
         ftp_task( ftp_site, site_path, incoming_dir )
 
     unzip_archives_task( incoming_dir, processed_dir, utils.unzip )
+
+    if report_executable:
+        if not os.path.exists( merged_dir ):
+            os.makedirs( merged_dir )
+
+        command_line = report_executable
+        command_line += " --expected " + '"%s"' % expected_results_file 
+        command_line += " --markup " + '"%s"' % failures_markup_file
+        command_line += " --comment " + '"%s"' % comment_file
+        command_line += " --tag " + tag
+        # command_line += " --run-date " + '"%s"' % run_date
+        command_line += " -rl"
+        for r in reports:
+            command_line += ' -r' + r
+        command_line += " --css " + xsl_path( 'html/master.css' )
+
+        for f in glob.glob( os.path.join( processed_dir, '*.xml' ) ):
+            command_line += ' "%s"' % f
+
+        utils.log("Producing the reports...")
+        os.system(command_line)
+
+        return
+
     merge_xmls_task( incoming_dir, processed_dir, merged_dir, expected_results_file, failures_markup_file, tag )
     make_links_task( merged_dir
                      , output_dir
@@ -696,6 +734,7 @@ def build_xsl_reports(
         , result_file_prefix
         , dont_collect_logs = 0
         , reports = report_types
+        , report_executable = None
         , warnings = []
         , user = None
         , upload = False
@@ -732,6 +771,7 @@ def build_xsl_reports(
         , dont_collect_logs
         , expected_results_file
         , failures_markup_file
+        , report_executable
         )
 
     if upload:
@@ -759,6 +799,7 @@ def accept_args( args ):
         , 'results-prefix='
         , 'dont-collect-logs'
         , 'reports='
+        , 'boost-report='
         , 'user='
         , 'upload'
         , 'help'
@@ -769,6 +810,7 @@ def accept_args( args ):
         , '--expected-results': ''
         , '--failures-markup': ''
         , '--reports': string.join( report_types, ',' )
+        , '--boost-report': None
         , '--tag': None
         , '--user': None
         , 'upload': False
@@ -791,6 +833,7 @@ def accept_args( args ):
         , options[ '--results-prefix' ]
         , options.has_key( '--dont-collect-logs' )
         , options[ '--reports' ].split( ',' )
+        , options[ '--boost-report' ]
         , options[ '--user' ]
         , options.has_key( '--upload' )
         )

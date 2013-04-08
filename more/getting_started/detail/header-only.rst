@@ -24,6 +24,7 @@ The only Boost libraries that *must* be built separately are:
 * Boost.Filesystem_
 * Boost.GraphParallel_
 * Boost.IOStreams_
+* Boost.Locale_
 * Boost.MPI_
 * Boost.ProgramOptions_
 * Boost.Python_ (see the `Boost.Python build documentation`__
@@ -57,7 +58,7 @@ A few libraries have optional separately-compiled binaries:
   mode, although **separate compilation is recommended for serious
   use**.
 
-* Boost.Exception provides non-intrusive implementation of
+* Boost.Exception_ provides non-intrusive implementation of
   exception_ptr for 32-bit _MSC_VER==1310 and _MSC_VER==1400
   which requires a separately-compiled binary. This is enabled by
   #define BOOST_ENABLE_NON_INTRUSIVE_EXCEPTION_PTR.

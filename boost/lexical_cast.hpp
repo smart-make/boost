@@ -1526,13 +1526,12 @@ namespace boost {
 
 #if defined(BOOST_NO_STRINGSTREAM)
             typedef std::ostrstream                         out_stream_t;
-            typedef parser_buf<std::strstreambuf, char>     unlocked_but_t;
 #elif defined(BOOST_NO_STD_LOCALE)
             typedef std::ostringstream                      out_stream_t;
-            typedef parser_buf<std::stringbuf, char>        unlocked_but_t;
+            typedef parser_buf<std::streambuf, char>        buffer_t;
 #else
             typedef std::basic_ostringstream<CharT, Traits>                 out_stream_t;
-            typedef parser_buf<std::basic_stringbuf<CharT, Traits>, CharT>  unlocked_but_t;
+            typedef parser_buf<std::basic_streambuf<CharT, Traits>, CharT>  buffer_t;
 #endif
             typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_c<
                 RequiresStringbuffer,
@@ -1615,8 +1614,9 @@ namespace boost {
                 BOOST_STATIC_ASSERT((boost::is_same<char, CharT>::value));
 #endif
                 bool const result = !(out_stream << input).fail();
-                const unlocked_but_t* const p
-                        = static_cast<unlocked_but_t*>(out_stream.rdbuf()) ;
+                const buffer_t* const p = static_cast<buffer_t*>(
+                    static_cast<std::basic_streambuf<CharT, Traits>*>(out_stream.rdbuf())
+                );
                 start = p->pbase();
                 finish = p->pptr();
                 return result;
@@ -1968,35 +1968,34 @@ namespace boost {
             template<typename InputStreamable>
             bool shr_using_base_class(InputStreamable& output)
             {
-#if (defined _MSC_VER)
-# pragma warning( push )
-  // conditional expression is constant
-# pragma warning( disable : 4127 )
-#endif
-                if(is_pointer<InputStreamable>::value)
-                    return false;
+                BOOST_STATIC_ASSERT_MSG(
+                    (!boost::is_pointer<InputStreamable>::value),
+                    "boost::lexical_cast can not convert to pointers"
+                );
 
 #if defined(BOOST_NO_STRINGSTREAM) || defined(BOOST_NO_STD_LOCALE)
-                // If you have compilation error at this point, than your STL library
-                // unsupports such conversions. Try updating it.
-                BOOST_STATIC_ASSERT((boost::is_same<char, CharT>::value));
+                BOOST_STATIC_ASSERT_MSG((boost::is_same<char, CharT>::value),
+                    "boost::lexical_cast can not convert, because your STL library does not "
+                    "support such conversions. Try updating it."
+                );
 #endif
 
 #if defined(BOOST_NO_STRINGSTREAM)
                 std::istrstream stream(start, finish - start);
-#elif defined(BOOST_NO_STD_LOCALE)
-                std::istringstream stream;
 #else
-                std::basic_istringstream<CharT, Traits> stream;
-#endif
-                static_cast<unlocked_but_t*>(stream.rdbuf())
-                        ->setbuf(start, finish - start);
+
+                buffer_t buf;
+                buf.setbuf(start, finish - start);
+#if defined(BOOST_NO_STD_LOCALE)
+                std::istream stream(&buf);
+#else
+                std::basic_istream<CharT, Traits> stream(&buf);
+#endif // BOOST_NO_STD_LOCALE
+#endif // BOOST_NO_STRINGSTREAM
 
                 stream.unsetf(std::ios::skipws);
                 lcast_set_precision(stream, static_cast<InputStreamable*>(0));
-#if (defined _MSC_VER)
-# pragma warning( pop )
-#endif
+
                 return stream >> output &&
                     stream.get() ==
 #if defined(__GNUC__) && (__GNUC__<3) && defined(BOOST_NO_STD_WSTRING)

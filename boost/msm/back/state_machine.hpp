@@ -332,9 +332,7 @@ private:
         }
         void set_forward_fct(::boost::function<execute_return (Event const&)> fct)
         {
-            // if we already have a forward, we never overwrite it
-            if (!m_forward.empty())
-                m_forward = fct;
+            m_forward = fct;
         }    
         exit_pt():m_forward(){}
         // by assignments, we keep our forwarding functor unchanged as our containing SM did not change
@@ -1654,8 +1652,6 @@ private:
          if (this != &rhs) 
          {
             Derived::operator=(rhs);
-            // initialize our list of states with the ones defined in Derived::initial_state
-            fill_states(this);
             do_copy(rhs);
          }
         return *this;
@@ -1973,7 +1969,7 @@ private:
                 ret_handled = handled;
             }
 
-            // process completion transitions BEFORE any other event in the pool (UML Standard 2.3 §15.3.14)
+            // process completion transitions BEFORE any other event in the pool (UML Standard 2.3 15.3.14)
             handle_eventless_transitions_helper<library_sm> eventless_helper(this,(handled == HANDLED_TRUE));
             eventless_helper.process_completion_event();
 

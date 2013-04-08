@@ -186,25 +186,38 @@ static void push_stack_on_stack( stack * const pDest, stack * const pSrc )
 
 
 /*
- * make1() - execute commands to update a TARGET and all of its dependencies
+ * make1() - execute commands to update a list of targets and all of their dependencies
  */
 
 static int intr = 0;
+static int quit = 0;
 
-int make1( TARGET * const t )
+int make1( LIST * targets )
 {
     state * pState;
+    int status = 0;
 
     memset( (char *)counts, 0, sizeof( *counts ) );
+    
+    {
+        LISTITER iter, end;
+        stack temp_stack = { NULL };
+        for ( iter = list_begin( targets ), end = list_end( targets );
+              iter != end; iter = list_next( iter ) )
+            push_state( &temp_stack, bindtarget( list_item( iter ) ), NULL, T_STATE_MAKE1A );
+        push_stack_on_stack( &state_stack, &temp_stack );
+    }
+
+    /* Clear any state left over from the past */
+    quit = 0;
 
     /* Recursively make the target and its dependencies. */
-    push_state( &state_stack, t, NULL, T_STATE_MAKE1A );
 
     while ( 1 )
     {
         while ( ( pState = current_state( &state_stack ) ) )
         {
-            if ( intr )
+            if ( quit )
                 pop_state( &state_stack );
 
             switch ( pState->curstate )
@@ -235,7 +248,31 @@ int make1( TARGET * const t )
         printf( "...updated %d target%s...\n", counts->made,
             counts->made > 1 ? "s" : "" );
 
-    return counts->total != counts->made;
+    /* If we were interrupted, exit now that all child processes
+       have finished. */
+    if ( intr )
+        exit( 1 );
+
+    {
+        LISTITER iter, end;
+        for ( iter = list_begin( targets ), end = list_end( targets );
+              iter != end; iter = list_next( iter ) )
+        {
+            /* Check that the target was updated and that the
+               update succeeded. */
+            TARGET * t = bindtarget( list_item( iter ) );
+            if (t->progress == T_MAKE_DONE)
+            {
+                if (t->status != EXEC_CMD_OK)
+                    status = 1;
+            }
+            else if ( ! ( t->progress == T_MAKE_NOEXEC_DONE && globs.noexec ) )
+            {
+                status = 1;
+            }
+        }
+    }
+    return status;
 }
 
 
@@ -302,7 +339,7 @@ static void make1a( state * const pState )
     {
         stack temp_stack = { NULL };
         TARGETS * c;
-        for ( c = t->depends; c && !intr; c = c->next )
+        for ( c = t->depends; c && !quit; c = c->next )
             push_state( &temp_stack, c->target, t, T_STATE_MAKE1A );
         push_stack_on_stack( &state_stack, &temp_stack );
     }
@@ -878,12 +915,16 @@ static void make1c_closure
         printf( "...\n" );
     }
 
-    /* On interrupt, set intr so _everything_ fails. Do the same for failed
+    /* On interrupt, set quit so _everything_ fails. Do the same for failed
      * commands if we were asked to stop the build in case of any errors.
      */
-    if ( t->status == EXEC_CMD_INTR ||
-        ( t->status == EXEC_CMD_FAIL && globs.quitquick ) )
+    if ( t->status == EXEC_CMD_INTR )
+    {
         ++intr;
+        ++quit;
+    }
+    if ( t->status == EXEC_CMD_FAIL && globs.quitquick )
+        ++quit;
 
     /* If the command was not successful remove all of its targets not marked as
      * "precious".

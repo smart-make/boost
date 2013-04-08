@@ -222,6 +222,7 @@ rule filtered-target ( name : message + : sources + : requirements * )
 
 rule declare_install_and_stage_proper_targets ( libraries * : headers * )
 {
+    local p = [ project.current ] ;
     for local l in $(libraries)
     {
         if $(l) = locale
@@ -245,6 +246,7 @@ rule declare_install_and_stage_proper_targets ( libraries * : headers * )
         else
         {
             alias $(l)-for-install : libs/$(l)/build ; 
+            $(p).mark-target-as-explicit $(l)-for-install ;
         }
     }
     local library-targets = $(libraries)-for-install ;
@@ -498,13 +500,14 @@ rule post-build ( ok ? )
     {
         if $(ok)
         {
+            local include-path = [ path.native $(BOOST_ROOT) ] ;
             ECHO "
 
 The Boost C++ Libraries were successfully built!
 
 The following directory should be added to compiler include paths:
 
-    $(BOOST_ROOT)
+    $(include-path)
 
 The following directory should be added to linker library paths:
 

@@ -184,6 +184,7 @@ treatment when linking.</p>
 <li><a class="reference external" href="../../libs/filesystem/index.html">Boost.Filesystem</a></li>
 <li><a class="reference external" href="../../libs/graph_parallel/index.html">Boost.GraphParallel</a></li>
 <li><a class="reference external" href="../../libs/iostreams/index.html">Boost.IOStreams</a></li>
+<li><a class="reference external" href="../../libs/locale/index.html">Boost.Locale</a></li>
 <li><a class="reference external" href="../../libs/mpi/index.html">Boost.MPI</a></li>
 <li><a class="reference external" href="../../libs/program_options/index.html">Boost.ProgramOptions</a></li>
 <li><a class="reference external" href="../../libs/python/doc/building.html">Boost.Python</a> (see the <a class="reference external" href="../../libs/python/doc/building.html">Boost.Python build documentation</a>
@@ -210,6 +211,10 @@ you're using <tt class="docutils literal">random_device</tt>.</li>
 <li><a class="reference external" href="../../libs/test/index.html">Boost.Test</a> can be used in “header-only” or “separately compiled”
 mode, although <strong>separate compilation is recommended for serious
 use</strong>.</li>
+<li><a class="reference external" href="../../libs/exception/index.html">Boost.Exception</a> provides non-intrusive implementation of
+exception_ptr for 32-bit _MSC_VER==1310 and _MSC_VER==1400
+which requires a separately-compiled binary. This is enabled by
+#define BOOST_ENABLE_NON_INTRUSIVE_EXCEPTION_PTR.</li>
 </ul>
 <!-- Copyright David Abrahams 2006. Distributed under the Boost -->
 <!-- Software License, Version 1.0. (See accompanying -->

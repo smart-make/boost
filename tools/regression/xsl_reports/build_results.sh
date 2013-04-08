@@ -92,6 +92,9 @@ build_results()
     cd ${1}
     root=`pwd`
     boost=${cwd}/boost
+    if [ -x ${cwd}/boost_report ]; then
+      report_opt=--boost-report=${cwd}/boost_report
+    fi
     case ${1} in
         trunk)
         tag=trunk
@@ -121,7 +124,8 @@ build_results()
         --failures-markup="${boost}/status/explicit-failures-markup.xml" \
         --comment="comment.html" \
         --user="" \
-        --reports=${reports}
+        --reports=${reports} \
+        ${report_opt}
     cd "${cwd}"
 }
 
@@ -130,16 +134,20 @@ upload_results()
     cwd=`pwd`
     upload_dir=/home/grafik/www.boost.org/testing
     
-    cd ${1}/all
-    rm -f ../../${1}.zip*
-    #~ zip -q -r -9 ../../${1} * -x '*.xml'
-    7za a -tzip -mx=9 ../../${1}.zip * '-x!*.xml'
-    cd "${cwd}"
+    if [ -f ${1}/report.zip ]; then
+        mv ${1}/report.zip ${1}.zip
+    else
+        cd ${1}/all
+        rm -f ../../${1}.zip*
+        #~ zip -q -r -9 ../../${1} * -x '*.xml'
+        7za a -tzip -mx=9 ../../${1}.zip * '-x!*.xml'
+        cd "${cwd}"
+    fi
     mv ${1}.zip ${1}.zip.uploading
     rsync -vuz --rsh=ssh --stats \
       ${1}.zip.uploading grafik@beta.boost.org:/${upload_dir}/incoming/
     ssh grafik@beta.boost.org \
-      cp ${upload_dir}/incoming/${1}.zip.uploading ${upload_dir}/live/${1}.zip
+      cp --no-preserve=timestamps ${upload_dir}/incoming/${1}.zip.uploading ${upload_dir}/live/${1}.zip
     mv ${1}.zip.uploading ${1}.zip
 }
 

@@ -112,7 +112,7 @@ struct test_class
     {}
 
     test_class(test_class &)
-      : args(make_vector(const_lvalue | id_copy))
+      : args(make_vector(lvalue | id_copy))
     {}
 
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
@@ -252,11 +252,37 @@ struct make_arg_impl<T&>
     }
 };
 
+#ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
+
+template<class T>
+struct make_arg_impl<T&&>
+{
+    static T&& apply()
+    {
+        static T result = make_arg_impl<T>::apply();
+        return std::move(result);
+    }
+};
+
+#endif
+
+#ifdef BOOST_NO_CXX11_RVALUE_REFERENCES
+
 template<class T>
 T make_arg()
 {
     return make_arg_impl<T>::apply();
 }
+
+#else
+
+template<class T>
+T&& make_arg()
+{
+    return make_arg_impl<T&&>::apply();
+}
+
+#endif
 
 int get_value(int i) { return i; }
 template<class T>
@@ -421,10 +447,10 @@ BOOST_AUTO_TEST_CASE(test_construct1)
 #ifndef BOOST_NO_FUNCTION_REFERENCE_QUALIFIERS
 
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
-    TEST_CONSTRUCT(_a(_b&&), (any<C, _b>), (rvalue | id_copy));
-    TEST_CONSTRUCT(_a(_b&&), (binding<C>, any<C, _b>), (rvalue | id_copy));
-    TEST_CONSTRUCT(_a(_b&&), (binding<C>&, any<C, _b>), (rvalue | id_copy));
-    TEST_CONSTRUCT(_a(_b&&), (const binding<C>&, any<C, _b>), (rvalue | id_copy));
+    TEST_CONSTRUCT(_a(_b&&), (any<C, _b>), (rvalue | id_int));
+    TEST_CONSTRUCT(_a(_b&&), (binding<C>, any<C, _b>), (rvalue | id_int));
+    TEST_CONSTRUCT(_a(_b&&), (binding<C>&, any<C, _b>), (rvalue | id_int));
+    TEST_CONSTRUCT(_a(_b&&), (const binding<C>&, any<C, _b>), (rvalue | id_int));
 #endif
 
 #endif

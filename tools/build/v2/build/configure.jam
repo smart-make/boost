@@ -16,6 +16,7 @@ import path ;
 import property ;
 import property-set ;
 import targets ;
+import config-cache ;
 
 
 rule log-summary ( )
@@ -73,8 +74,8 @@ rule log-check-result ( result )
 
 rule log-library-search-result ( library : result )
 {
-    local x = [ PAD "    - $(library) : $(result)" : $(.width) ] ;
-    log-check-result "$(x)" ;
+    local x = [ PAD "    - $(library)" : $(.width) ] ;
+    log-check-result "$(x) : $(result)" ;
 }
 
 
@@ -134,7 +135,11 @@ rule builds-raw ( metatarget-reference : project : ps : what : retry ? )
     {
         .$(what)-tested.$(ps) = true ;
 
-        local targets = [ targets.generate-from-reference
+        local cache-name = $(what) [ $(ps).raw ] ;
+        cache-name = $(cache-name:J=-) ;
+        local value = [ config-cache.get $(cache-name) ] ;
+        
+        local targets = [ targets.generate-from-reference 
             $(metatarget-reference) : $(project) : $(ps) ] ;
 
         local jam-targets ;
@@ -142,10 +147,24 @@ rule builds-raw ( metatarget-reference : project : ps : what : retry ? )
         {
             jam-targets += [ $(t).actualize ] ;
         }
-
-        if ! UPDATE_NOW in [ RULENAMES ]
+             
+        if $(value)
         {
-            # Cannot determine. Assume existence.
+            local x = [ PAD "    - $(what)" : $(.width) ] ; 
+            if $(value) = true
+            {
+                .$(what)-supported.$(ps) = yes ;
+                result = true ;
+                log-check-result "$(x) : yes (cached)" ;
+            }
+            else
+            {
+                log-check-result "$(x) : no  (cached)" ;
+            }
+        }       
+        else if ! UPDATE_NOW in [ RULENAMES ]
+        {
+            # Cannot determine. Assume existance.
         }
         else
         {
@@ -162,6 +181,17 @@ rule builds-raw ( metatarget-reference : project : ps : what : retry ? )
                 log-check-result "$(x) : no" ;
             }
         }
+        if ! $(value)
+        {
+            if $(result)
+            {
+                config-cache.set $(cache-name) : true ;
+            }
+            else
+            {
+                config-cache.set $(cache-name) : false ;
+            }
+        }        
         return $(result) ;
     }
     else
@@ -172,8 +202,6 @@ rule builds-raw ( metatarget-reference : project : ps : what : retry ? )
 
 rule builds ( metatarget-reference : properties * : what ? : retry ? )
 {
-    what ?= "$(metatarget-reference) builds" ;
-
     # FIXME: This should not be hardcoded. Other checks might want to consider a
     # different set of features as relevant.
     local toolset = [ property.select <toolset> : $(properties) ] ;
@@ -184,6 +212,13 @@ rule builds ( metatarget-reference : properties * : what ? : retry ? )
     local ps = [ property-set.create $(relevant) ] ;
     local t = [ targets.current ] ;
     local p = [ $(t).project ] ;
+
+    if ! $(what)
+    {
+        local resolved = [ targets.resolve-reference $(metatarget-reference) : $(p) ] ;
+        local name = [ $(resolved[1]).name ] ;
+        what = "$(name) builds" ;
+    }
 
     return [ builds-raw $(metatarget-reference) : $(p) : $(ps) : $(what) :
         $(retry) ] ;
