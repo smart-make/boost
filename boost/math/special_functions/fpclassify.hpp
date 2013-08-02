@@ -94,6 +94,11 @@ namespace boost{
 //
 namespace math_detail{
 
+#ifdef BOOST_MSVC
+#pragma warning(push)
+#pragma warning(disable:4800)
+#endif
+
 template <class T>
 inline bool is_nan_helper(T t, const boost::true_type&)
 {
@@ -106,6 +111,10 @@ inline bool is_nan_helper(T t, const boost::true_type&)
    return (BOOST_FPCLASSIFY_PREFIX fpclassify(t) == (int)FP_NAN);
 #endif
 }
+
+#ifdef BOOST_MSVC
+#pragma warning(pop)
+#endif
 
 template <class T>
 inline bool is_nan_helper(T, const boost::false_type&)
@@ -249,7 +258,7 @@ inline int fpclassify BOOST_NO_MACRO_EXPAND(T t)
 {
    typedef typename detail::fp_traits<T>::type traits;
    typedef typename traits::method method;
-   typedef typename tools::promote_args<T>::type value_type;
+   typedef typename tools::promote_args_permissive<T>::type value_type;
 #ifdef BOOST_NO_LIMITS_COMPILE_TIME_CONSTANTS
    if(std::numeric_limits<T>::is_specialized && detail::is_generic_tag_false(static_cast<method*>(0)))
       return detail::fpclassify_imp(static_cast<value_type>(t), detail::generic_tag<true>());
@@ -329,7 +338,7 @@ inline bool (isfinite)(T x)
    typedef typename detail::fp_traits<T>::type traits;
    typedef typename traits::method method;
    // typedef typename boost::is_floating_point<T>::type fp_tag;
-   typedef typename tools::promote_args<T>::type value_type;
+   typedef typename tools::promote_args_permissive<T>::type value_type;
    return detail::isfinite_impl(static_cast<value_type>(x), method());
 }
 
@@ -400,7 +409,7 @@ inline bool (isnormal)(T x)
    typedef typename detail::fp_traits<T>::type traits;
    typedef typename traits::method method;
    //typedef typename boost::is_floating_point<T>::type fp_tag;
-   typedef typename tools::promote_args<T>::type value_type;
+   typedef typename tools::promote_args_permissive<T>::type value_type;
    return detail::isnormal_impl(static_cast<value_type>(x), method());
 }
 
@@ -489,7 +498,7 @@ inline bool (isinf)(T x)
    typedef typename detail::fp_traits<T>::type traits;
    typedef typename traits::method method;
    // typedef typename boost::is_floating_point<T>::type fp_tag;
-   typedef typename tools::promote_args<T>::type value_type;
+   typedef typename tools::promote_args_permissive<T>::type value_type;
    return detail::isinf_impl(static_cast<value_type>(x), method());
 }
 

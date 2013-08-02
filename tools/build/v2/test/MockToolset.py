@@ -24,15 +24,19 @@ parser.add_option('--archive', dest="archive", action="store_true")
 parser.add_option('--static-lib', dest="static_libraries", action="append")
 parser.add_option('--shared-lib', dest="shared_libraries", action="append")
 
+cwd = os.environ["JAM_CWD"]
+
 class MockInfo(object):
-  def __init__(self):
+  def __init__(self, verbose=False):
     self.files = dict()
     self.commands = list()
+    self.verbose = verbose
   def source_file(self, name, pattern):
     self.files[name] = pattern
   def action(self, command, status=0):
     self.commands.append((command, status))
   def check(self, command):
+    print "Testing command", command
     for (raw, status) in self.commands:
       if self.matches(raw, command):
         return status
@@ -40,7 +44,11 @@ class MockInfo(object):
     (expected_options, expected_args) = parser.parse_args(raw.split())
     options = command[0]
     input_files = list(command[1])
+    if self.verbose:
+      print "  - matching against", (expected_options, expected_args)
     if len(expected_args) != len(input_files):
+      if self.verbose:
+        print "  argument list sizes differ"
       return False
     for arg in expected_args:
       if arg.startswith('$'):
@@ -56,22 +64,30 @@ class MockInfo(object):
         if matching_file is not None:
           input_files.remove(matching_file)
         else:
+          if self.verbose:
+            print "    Failed to match input file contents: %s" % arg
           return False
       else:
         if arg in input_files:
           input_files.remove(arg)
         else:
+          if self.verbose:
+            print "    Failed to match input file: %s" % arg
           return False
 
     if options.language != expected_options.language:
+      if self.verbose:
+        print "    Failed to match -c"
       return False
 
     if options.compile != expected_options.compile:
+      if self.verbose:
+        print "    Failed to match -x"
       return False
 
     # Normalize a path for comparison purposes
     def adjust_path(p):
-      return os.path.normcase(os.path.abspath(p))
+      return os.path.normcase(os.path.normpath(os.path.join(cwd, p)))
 
     # order matters
     if options.includes is None:
@@ -80,6 +96,9 @@ class MockInfo(object):
       expected_options.includes = []
     if map(adjust_path, options.includes) != \
         map(adjust_path, expected_options.includes):
+      if self.verbose:
+        print "    Failed to match -I ",  map(adjust_path, options.includes), \
+          " != ", map(adjust_path, expected_options.includes)
       return False
 
     if options.library_path is None:
@@ -88,18 +107,29 @@ class MockInfo(object):
       expected_options.library_path = []
     if map(adjust_path, options.library_path) != \
         map(adjust_path, expected_options.library_path):
+      if self.verbose:
+        print "    Failed to match -L ",  map(adjust_path, options.library_path), \
+          " != ", map(adjust_path, expected_options.library_path)
       return False
 
     if options.static_libraries != expected_options.static_libraries:
+      if self.verbose:
+        print "    Failed to match --static-lib"
       return False
 
     if options.shared_libraries != expected_options.shared_libraries:
+      if self.verbose:
+        print "    Failed to match --shared-lib"
       return False
 
     if options.dll != expected_options.dll:
+      if self.verbose:
+        print "    Failed to match --dll"
       return False
 
     if options.archive != expected_options.archive:
+      if self.verbose:
+        print "    Failed to match --archive"
       return False
 
     # The output must be handled after everything else
@@ -115,11 +145,17 @@ class MockInfo(object):
           with open(options.output_file, 'w') as output:
             output.write(fileid)
       else:
+        if self.verbose:
+          print "Failed to match -o"
         return False
     elif options.output_file is not None:
+      if self.verbose:
+        print "Failed to match -o"
       return False
 
     # if we've gotten here, then everything matched
+    if self.verbose:
+      print "    Matched"
     return True
 ''')
 
@@ -139,11 +175,23 @@ else:
   t.write('mock.jam', '''
 import feature ;
 import toolset ;
+import path ;
+import modules ;
+import common ;
+import type ;
 
-python-cmd = "\"%s\"" ;
+.python-cmd = "\"%s\"" ;
+
+# Behave the same as gcc on Windows, because that's what
+# the test system expects
+type.set-generated-target-prefix SHARED_LIB : <toolset>mock <target-os>windows : lib ;
+type.set-generated-target-suffix STATIC_LIB : <toolset>mock <target-os>windows : a ;
 
 rule init ( )
 {
+    local here = [ path.make [ modules.binding $(__name__) ] ] ;
+    here = [ path.native [ path.root [ path.parent $(here) ] [ path.pwd ] ] ] ;
+    .config-cmd = [ common.variable-setting-command JAM_CWD : $(here) ] $(.python-cmd) -B ;
 }
 
 feature.extend toolset : mock ;
@@ -159,12 +207,12 @@ toolset.flags mock.compile INCLUDES <include> ;
 
 actions compile.c
 {
-   $(python-cmd) mock.py -c -x c -I$(INCLUDES) $(>) -o $(<)
+   $(.config-cmd) mock.py -c -x c -I"$(INCLUDES)" "$(>)" -o "$(<)"
 }
 
 actions compile.c++
 {
-    $(python-cmd) mock.py -c -x c++ -I$(INCLUDES) $(>) -o $(<)
+    $(.config-cmd) mock.py -c -x c++ -I"$(INCLUDES)" "$(>)" -o "$(<)"
 }
 
 toolset.flags mock.link USER_OPTIONS <linkflags> ;
@@ -175,27 +223,28 @@ toolset.flags mock.link LIBRARIES <library-file> ;
 
 actions link
 {
-    $(python-cmd) mock.py $(>) -o $(<) $(USER_OPTIONS) -L$(LINK_PATH) --static-lib=$(FINDLIBS-STATIC) --shared-lib=$(FINDLIBS-SHARED)
+    $(.config-cmd) mock.py "$(>)" -o "$(<)" $(USER_OPTIONS) -L"$(LINK_PATH)" --static-lib=$(FINDLIBS-STATIC) --shared-lib=$(FINDLIBS-SHARED)
 }
 
 actions archive
 {
-    $(python-cmd) mock.py --archive $(>) -o $(<) $(USER_OPTIONS)
+    $(.config-cmd) mock.py --archive "$(>)" -o "$(<)" $(USER_OPTIONS)
 }
 
 actions link.dll
 {
-    $(python-cmd) mock.py --dll $(>) -o $(<) $(USER_OPTIONS) -L$(LINK_PATH) --static-lib=$(FINDLIBS-STATIC) --shared-lib=$(FINDLIBS-SHARED)
+    $(.config-cmd) mock.py --dll "$(>)" -o "$(<)" $(USER_OPTIONS) -L"$(LINK_PATH)" --static-lib=$(FINDLIBS-STATIC) --shared-lib=$(FINDLIBS-SHARED)
 }
 
 ''' % sys.executable.replace('\\', '\\\\'))
 
 def set_expected(t, markup):
+  verbose = "True" if t.verbose else "False"
   t.write('markup.py', '''
 import mockinfo
-info = mockinfo.MockInfo()
+info = mockinfo.MockInfo(%s)
 def source_file(name, contents):
   info.source_file(name, contents)
 def action(command, status=0):
   info.action(command, status)
-''' + markup)
+''' % verbose + markup)

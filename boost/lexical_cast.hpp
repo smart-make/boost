@@ -19,7 +19,7 @@
 //        Beman Dawes, Dave Abrahams, Daryle Walker, Peter Dimov,
 //        Alexander Nasonov, Antony Polukhin, Justin Viiret, Michael Hofmann,
 //        Cheng Yang, Matthew Bradbury, David W. Birdsall, Pavel Korzh and other Boosters
-// when:  November 2000, March 2003, June 2005, June 2006, March 2011 - 2012
+// when:  November 2000, March 2003, June 2005, June 2006, March 2011 - 2013
 
 #include <boost/config.hpp>
 #if defined(BOOST_NO_STRINGSTREAM) || defined(BOOST_NO_STD_WSTRING)
@@ -68,11 +68,6 @@
 #define BOOST_LCAST_THROW_BAD_CAST(Source, Target) \
     throw_exception(bad_lexical_cast(typeid(Source), typeid(Target)))
 #endif
-
-#if (defined(BOOST_LCAST_HAS_INT128) && !defined(__GNUC__)) || GCC_VERSION > 40700
-#define BOOST_LCAST_HAS_INT128
-#endif
-
 
 namespace boost
 {
@@ -316,7 +311,7 @@ namespace boost {
         > {};
 #endif
 
-#ifdef BOOST_LCAST_HAS_INT128
+#ifdef BOOST_HAS_INT128
         template <> struct stream_char_common< boost::int128_type >: public boost::mpl::identity< char > {};
         template <> struct stream_char_common< boost::uint128_type >: public boost::mpl::identity< char > {};
 #endif
@@ -613,7 +608,7 @@ namespace boost {
         BOOST_LCAST_DEF(unsigned __int64)
         BOOST_LCAST_DEF(         __int64)
 #endif
-#ifdef BOOST_LCAST_HAS_INT128
+#ifdef BOOST_HAS_INT128
         BOOST_LCAST_DEF(boost::int128_type)
         BOOST_LCAST_DEF(boost::uint128_type)
 #endif
@@ -879,8 +874,16 @@ namespace boost {
         {
 #ifndef BOOST_NO_LIMITS_COMPILE_TIME_CONSTANTS
             BOOST_STATIC_ASSERT(!std::numeric_limits<T>::is_signed);
+
+            // GCC when used with flag -std=c++0x may not have std::numeric_limits
+            // specializations for __int128 and unsigned __int128 types.
+            // Try compilation with -std=gnu++0x or -std=gnu++11.
+            //
+            // http://gcc.gnu.org/bugzilla/show_bug.cgi?id=40856
+            BOOST_STATIC_ASSERT_MSG(std::numeric_limits<T>::is_specialized,
+                "std::numeric_limits are not specialized for integral type passed to boost::lexical_cast"
+            );
 #endif
-            typedef typename Traits::int_type int_type;
             CharT const czero = lcast_char_constants<CharT>::zero;
             --end;
             value = 0;
@@ -1828,7 +1831,7 @@ namespace boost {
             bool operator<<(         __int64 n)         { return shl_signed(n); }
 #endif
 
-#ifdef BOOST_LCAST_HAS_INT128
+#ifdef BOOST_HAS_INT128
         bool operator<<(const boost::uint128_type& n)   { start = lcast_put_unsigned<Traits>(n, finish); return true; }
         bool operator<<(const boost::int128_type& n)    { return shl_signed(n); }
 #endif
@@ -2040,7 +2043,7 @@ namespace boost {
             bool operator>>(__int64& output)                    { return shr_signed(output); }
 #endif
 
-#ifdef BOOST_LCAST_HAS_INT128
+#ifdef BOOST_HAS_INT128
             bool operator>>(boost::uint128_type& output)        { return shr_unsigned(output); }
             bool operator>>(boost::int128_type& output)         { return shr_signed(output); }
 #endif
@@ -2554,7 +2557,7 @@ namespace boost {
         );
     }
 #endif
-#ifndef BOOST_NO_CHAR16_T
+#ifndef BOOST_NO_CXX11_CHAR16_T
     template <typename Target>
     inline Target lexical_cast(const char16_t* chars, std::size_t count)
     {
@@ -2563,7 +2566,7 @@ namespace boost {
         );
     }
 #endif
-#ifndef BOOST_NO_CHAR32_T
+#ifndef BOOST_NO_CXX11_CHAR32_T
     template <typename Target>
     inline Target lexical_cast(const char32_t* chars, std::size_t count)
     {
@@ -2712,7 +2715,7 @@ namespace boost {
 
 // Copyright Kevlin Henney, 2000-2005.
 // Copyright Alexander Nasonov, 2006-2010.
-// Copyright Antony Polukhin, 2011-2012.
+// Copyright Antony Polukhin, 2011-2013.
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -2720,7 +2723,6 @@ namespace boost {
 
 #undef BOOST_LCAST_THROW_BAD_CAST
 #undef BOOST_LCAST_NO_WCHAR_T
-#undef BOOST_LCAST_HAS_INT128
 
 #endif // BOOST_LEXICAL_CAST_INCLUDED
 

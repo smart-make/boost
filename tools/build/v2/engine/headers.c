@@ -96,9 +96,10 @@ void headers( TARGET * t )
 
         if ( lol_get( frame->args, 1 ) )
         {
+            OBJECT * rulename = list_front( hdrrule );
             /* The third argument to HDRRULE is the bound name of $(<). */
             lol_add( frame->args, list_new( object_copy( t->boundname ) ) );
-            list_free( evaluate_rule( list_front( hdrrule ), frame ) );
+            list_free( evaluate_rule( bindrule( rulename, frame->module ), rulename, frame ) );
         }
 
         /* Clean up. */
@@ -137,7 +138,7 @@ LIST * headers1( LIST * l, OBJECT * file, int rec, regexp * re[] )
     if ( re_macros == 0 )
     {
         OBJECT * const re_str = object_new(
-            "^[     ]*#[    ]*include[  ]*([A-Za-z][A-Za-z0-9_]*).*$" );
+            "#[ \t]*include[ \t]*([A-Za-z][A-Za-z0-9_]*).*$" );
         re_macros = regex_compile( re_str );
         object_free( re_str );
     }

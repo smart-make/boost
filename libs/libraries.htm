@@ -199,20 +199,19 @@ how to download, build, and install the libraries.</p>
     <li><a href="locale/index.html">locale</a> - Provide localization and Unicode
     handling tools for C++, from Artyom Beilis</li>
     <li><a href="lockfree/index.html">lockfree</a> - Lockfree data structures, from Tim Blechmann</li>
+    <li><a href="log/index.html">log</a> - Logging library, from Andrey Semashev</li>
     <li><a href="math/doc/index.html">math</a> - Several contributions in the
     domain of mathematics, from various authors.</li>
-    <li><a href="math/doc/complex/html/index.html">math/complex number algorithms</a> -
+    <li><a href="math/doc/html/inverse_complex.html">math/complex number algorithms</a> -
     These complex number algorithms are the inverses of trigonometric functions currently present in the C++ standard, from John Maddock.</li>
-    <li><a href="math/doc/common_factor.html">math/common_factor</a> - Greatest
+    <li><a href="math/doc/html/gcd_lcm.html">math/common_factor</a> - Greatest
     common divisor and least common multiple, from Daryle Walker.</li>
-    <li><a href="math/doc/octonion/html/index.html">math/octonion</a> -
-        Octonions, from Hubert Holin.</li>
-    <li><a href="math/doc/quaternion/html/index.html">math/quaternion</a> -
-        Quaternions, from Hubert Holin.</li>
-    <li><a href="math/doc/sf_and_dist/html/index.html">math/special_functions</a> -
-        A wide selection of mathematical special functions from John Maddock, Paul Bristow, Hubert Holin and Xiaogang Zhang.</li>
-    <li><a href="math/doc/sf_and_dist/html/index.html">math/statistical distributions</a> -
-        A wide selection of univariate statistical distributions and functions that operate on them from John Maddock and Paul Bristow</li>
+   <li><a href="math/doc/html/constants.html">math/constants</a> - A wide range of numeric constants from Paul Bristow and John Maddock.</li>
+   <li><a href="math/doc/html/utils.html">math/floating point utilities</a> - Utilities for manipulating floating point values from Johan Rade.</li>
+   <li><a href="math/doc/html/octonions.html">math/octonion</a> - Octonions, from Hubert Holin.</li>
+    <li><a href="math/doc/html/special.html">math/special_functions</a> - A wide selection of mathematical special functions from John Maddock, Paul Bristow, Hubert Holin and Xiaogang Zhang.</li>
+    <li><a href="math/doc/html/dist.html">math/statistical distributions</a> - A wide selection of univariate statistical distributions and functions that operate on them from John Maddock and Paul Bristow</li>
+    <li><a href="math/doc/html/quaternions.html">math/quaternion</a> - Quaternions, from Hubert Holin.</li>
     <li><a href="algorithm/minmax/index.html">minmax</a> - standard library
         extensions for simultaneous min/max and min/max element computations,
     from Herv&eacute; Br&ouml;nnimann.</li>
@@ -249,8 +248,9 @@ how to download, build, and install the libraries.</p>
     <li><a href="ptr_container/index.html">pointer container</a>
     - Containers for storing heap-allocated polymorphic objects to ease
       OO-programming, from Thorsten Ottosen. </li>
-    <li><a href="polygon/index.html">polygon</a> - Booleans/clipping, resizing/offsetting and more for planar polygons with integral coordinates, from
-      Lucanus Simonson.</li>
+    <li><a href="polygon/index.html">polygon</a> - Voronoi diagram construction
+      and booleans/clipping, resizing/offsetting and more for planar polygons
+      with integral coordinates, from Lucanus Simonson, Andrii Sydorchuk.</li>
     <li><a href="pool/doc/html/index.html">pool</a> - Memory pool management, from
       Steve Cleary.</li>
     <li><a href="preprocessor/doc/index.html">preprocessor</a> - Preprocessor
@@ -292,7 +292,7 @@ how to download, build, and install the libraries.</p>
         Execute arbitrary code at scope exit, from Alexander Nasonov and Lorenzo Caminiti.</li>
     <li><a href="serialization/doc/index.html">serialization</a>
         - Serialization for persistence and marshalling, from Robert Ramey</li>
-    <li><a href="signals/index.html">signals</a> - managed signals &amp;
+    <li><a href="signals/index.html">signals</a> <em>(deprecated)</em> - managed signals &amp;
          slots callback implementation, from Doug Gregor.</li>
     <li><a href="signals2/index.html">signals2</a> - managed signals &amp;
          slots callback implementation (thread-safe version 2), from Frank Mori Hess.</li>
@@ -319,7 +319,8 @@ how to download, build, and install the libraries.</p>
     full unit testing, and for program
       execution monitoring, from Gennadiy Rozental.</li>
     <li><a href="thread/doc/index.html">thread</a> - Portable C++
-      multi-threading, from William Kempf and Anthony Williams.</li>
+      multi-threading, from William Kempf, Anthony Williams and
+      Vicente J. Botet Escrib&aacute;.</li>
     <li><a href="timer/index.html">timer</a> - Event timer,
         progress timer, and progress display classes, from Beman
         Dawes.</li>
@@ -328,6 +329,7 @@ how to download, build, and install the libraries.</p>
     <li><a href="tr1/index.html">TR1</a> - An implementation of the Technical
         Report on C++ Library Extensions, using other Boost libraries as a basis, from John Maddock.</li>
     <li><a href="../doc/html/tribool.html">tribool</a> - 3-state boolean type library, from Doug Gregor.</li>
+    <li><a href="tti/index.html">tti</a> - Type Traits Introspection library, from Edward Diener</li>
     <li><a href="tuple/doc/tuple_users_guide.html">tuple</a> - Ease definition of functions returning multiple values, and more,
     from Jaakko J&auml;rvi.</li>
     <li><a href="type_erasure/index.html">type_erasure</a> -
@@ -380,6 +382,9 @@ how to download, build, and install the libraries.</p>
     <li><a href="algorithm/minmax/index.html">minmax</a> - standard library
         extensions for simultaneous min/max and min/max element computations,
         from Herv&eacute; Br&ouml;nnimann.</li>
+    <li><a href="polygon/index.html">polygon</a> - Voronoi diagram construction
+        and booleans/clipping, resizing/offsetting and more for planar polygons
+        with integral coordinates, from Lucanus Simonson, Andrii Sydorchuk.</li>
     <li><a href="range/index.html">range</a> - A new infrastructure
         for generic algorithms that builds on top
         of the new iterator concepts, from Thorsten Ottosen.</li>
@@ -414,7 +419,9 @@ how to download, build, and install the libraries.</p>
     <li><a href="lockfree/index.html">lockfree</a> - Lockfree data structures, from Tim Blechmann</li>
     <li><a href="../doc/html/mpi.html">MPI</a> - Message Passing Interface library, for use in distributed-memory parallel application programming, from Douglas Gregor and Matthias Troyer.</li>
     <li><a href="thread/doc/index.html">thread</a> - Portable C++
-      multi-threading, from William Kempf.</li>
+      multi-threading, from William Kempf, Anthony Williams and
+      Vicente J. Botet Escrib&aacute;.</li>
+
 </ul>
 
 
@@ -497,6 +504,9 @@ how to download, build, and install the libraries.</p>
     wrapper for optional values, from Fernando Cacciola.</li>
     <li><a href="ptr_container/index.html">pointer container</a>
     - Containers for storing heap-allocated polymorphic objects to ease OO-programming, from Thorsten Ottosen. </li>
+    <li><a href="polygon/index.html">polygon</a> - Voronoi diagram construction
+        and booleans/clipping, resizing/offsetting and more for planar polygons
+        with integral coordinates, from Lucanus Simonson, Andrii Sydorchuk.</li>
     <li><a href="property_tree/index.html">property tree</a> - A tree data
         structure especially suited to storing configuration data, from Marcin
         Kalicinski and Sebastian Redl.</li>
@@ -555,7 +565,7 @@ how to download, build, and install the libraries.</p>
     passing references to generic functions, from Jaako J&auml;rvi,
     Peter Dimov, Doug Gregor, and Dave Abrahams.</li>
 
-    <li><a href="signals/index.html">signals</a> - managed signals &amp;
+    <li><a href="signals/index.html">signals</a> <em>(deprecated)</em> - managed signals &amp;
          slots callback implementation, from Doug Gregor.</li>
     <li><a href="signals2/index.html">signals2</a> - managed signals &amp;
          slots callback implementation (thread-safe version 2), from Frank Mori Hess.</li>
@@ -590,6 +600,7 @@ how to download, build, and install the libraries.</p>
     <li><a href="static_assert/static_assert.htm">static_assert</a>
         - Static assertions (compile time assertions), from John
         Maddock.</li>
+    <li><a href="tti/index.html">tti</a> - Type Traits Introspection library, from Edward Diener</li>
     <li><a href="type_traits/index.html">type_traits</a> -
         Templates for fundamental properties of types, from John
         Maddock, Steve Cleary, et al.</li>
@@ -698,18 +709,20 @@ of arbitrary data for persistence and marshalling, from Robert Ramey</li>
     Melquiond, Herv&eacute; Br&ouml;nnimann and Sylvain Pion.</li>
     <li><a href="math/doc/index.html">math</a> - Several contributions in the
     domain of mathematics, from various authors.</li>
-    <li><a href="math/doc/complex/html/index.html">math/complex number algorithms</a> -
+    <li><a href="math/doc/html/inverse_complex.html">math/complex number algorithms</a> -
     These complex number algorithms are the inverses of trigonometric functions currently present in the C++ standard, from John Maddock.</li>
-    <li><a href="math/doc/common_factor.html">math/common_factor</a> - Greatest
+    <li><a href="math/doc/html/gcd_lcm.html">math/common_factor</a> - Greatest
     common divisor and least common multiple, from Daryle Walker.</li>
-    <li><a href="math/doc/octonion/html/index.html">math/octonion</a> -
+    <li><a href="math/doc/html/octonions.html">math/octonion</a> -
         Octonions, from Hubert Holin.</li>
-    <li><a href="math/doc/quaternion/html/index.html">math/quaternion</a> -
+    <li><a href="math/doc/html/quaternions.html">math/quaternion</a> -
         Quaternions, from Hubert Holin.</li>
-    <li><a href="math/doc/sf_and_dist/html/index.html">math/special_functions</a> -
+    <li><a href="math/doc/html/special.html">math/special_functions</a> -
         A wide selection of mathematical special functions from John Maddock, Paul Bristow, Hubert Holin and Xiaogang Zhang.</li>
-    <li><a href="math/doc/sf_and_dist/html/index.html">math/statistical distributions</a> -
+    <li><a href="math/doc/html/dist.html">math/statistical distributions</a> -
         A wide selection of univariate statistical distributions and functions that operate on them from John Maddock and Paul Bristow</li>
+   <li><a href="math/doc/html/constants.html">math/constants</a> - A wide range of numberic constants from John Maddock and Paul Bristow.</li>
+   <li><a href="math/doc/html/utils.html">math/floating point utilities</a> - Floating point manipulation utilities from Johan Rade.</li>
     <li><a href="multi_array/doc/index.html">multi_array</a> - Multidimensional
     containers and adaptors for arrays of contiguous data, from Ron Garcia.</li>
     <li><a href="multiprecision/index.html">multiprecision</a> - Extended precision arithmetic types
@@ -720,8 +733,9 @@ of arbitrary data for persistence and marshalling, from Robert Ramey</li>
     <li><a href="utility/operators.htm">operators</a> - Templates
         ease arithmetic classes and iterators, from Dave Abrahams
         and Jeremy Siek.</li>
-    <li><a href="polygon/index.html">polygon</a> - Booleans/clipping, resizing/offsetting and more for planar polygons with integral coordinates, from
-      Lucanus Simonson.</li>
+    <li><a href="polygon/index.html">polygon</a> - Voronoi diagram construction
+      and booleans/clipping, resizing/offsetting and more for planar polygons
+      with integral coordinates, from Lucanus Simonson, Andrii Sydorchuk.</li>
     <li><a href="random/index.html">random</a> - A complete
         system for random number generation, from Jens Maurer.</li>
     <li><a href="ratio/index.html">ratio</a> - A compile time ratio arithmetic,
@@ -750,6 +764,7 @@ of arbitrary data for persistence and marshalling, from Robert Ramey</li>
     <li><a href="static_assert/static_assert.htm">static_assert</a>
         - Static assertions (compile time assertions), from John
         Maddock.</li>
+    <li><a href="tti/index.html">tti</a> - Type Traits Introspection library, from Edward Diener</li>
     <li><a href="type_traits/index.html">type_traits</a> -
         Templates for fundamental properties of types, from John
         Maddock, Steve Cleary, et al.</li>
@@ -761,7 +776,7 @@ of arbitrary data for persistence and marshalling, from Robert Ramey</li>
     <li><a href="flyweight/doc/index.html">flyweight</a> - Design pattern
     to manage large quantities of highly redundant objects,
     from Joaqu&iacute;n M L&oacute;pez Mu&ntilde;oz.</li>
-    <li><a href="signals/index.html">signals</a> - managed signals &amp;
+    <li><a href="signals/index.html">signals</a> <em>(deprecated)</em> - managed signals &amp;
          slots callback implementation, from Doug Gregor.</li>
     <li><a href="signals2/index.html">signals2</a> - managed signals &amp;
          slots callback implementation (thread-safe version 2), from Frank Mori Hess.</li>
@@ -847,7 +862,8 @@ of arbitrary data for persistence and marshalling, from Robert Ramey</li>
     including the diagnostics support that will be part of the C++0x standard
     library, from Beman Dawes.</li>
     <li><a href="thread/doc/index.html">thread</a> - Portable C++
-      multi-threading, from William Kempf and Anthony Williams.</li>
+      multi-threading, from William Kempf, Anthony Williams and
+      Vicente J. Botet Escrib&aacute;.</li>
 </ul>
 
 <h3><a name="Miscellaneous">Miscellaneous</a></h3>

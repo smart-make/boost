@@ -137,7 +137,7 @@ class vector_const_iterator
    {  right.m_ptr += off;  return right; }
 
    friend vector_const_iterator operator-(vector_const_iterator left, difference_type off) BOOST_CONTAINER_NOEXCEPT
-   {  left.m_ptr += off;  return left; }
+   {  left.m_ptr -= off;  return left; }
 
    friend difference_type operator-(const vector_const_iterator &left, const vector_const_iterator& right) BOOST_CONTAINER_NOEXCEPT
    {  return left.m_ptr - right.m_ptr;   }
@@ -530,7 +530,7 @@ struct vector_alloc_holder<Allocator, container_detail::integral_constant<unsign
       this->priv_swap_members_impl(x);
    }
 
-   void move_from_empty(vector_alloc_holder &x)
+   void move_from_empty(vector_alloc_holder &)
    {  //Containers with version 0 allocators can't be moved without move elements one by one
       throw_bad_alloc();
    }

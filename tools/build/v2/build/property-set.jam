@@ -298,6 +298,28 @@ class property-set
         return $($(feature)) ;
     }
 
+    # Returns true if the property-set contains all the
+    # specified properties.
+    #
+    rule contains-raw ( properties * )
+    {
+        if $(properties) in $(self.raw)
+        {
+            return true ;
+        }
+    }
+
+    # Returns true if the property-set has values for
+    # all the specified features
+    #
+    rule contains-features ( features * )
+    {
+        if $(features) in $(self.raw:G)
+        {
+            return true ;
+        }
+    }
+
     # private
 
     rule init-base ( )
@@ -379,6 +401,15 @@ rule create ( raw-properties * )
 }
 NATIVE_RULE property-set : create ;
 
+if [ HAS_NATIVE_RULE class@property-set : get : 1 ]
+{
+    NATIVE_RULE class@property-set : get ;
+}
+
+if [ HAS_NATIVE_RULE class@property-set : contains-features : 1 ]
+{
+    NATIVE_RULE class@property-set : contains-features ;
+}
 
 # Creates a new 'property-set' instance after checking that all properties are
 # valid and converting implicit properties into gristed form.
@@ -395,18 +426,10 @@ rule create-with-validation ( raw-properties * )
 #
 rule create-from-user-input ( raw-properties * : jamfile-module location )
 {
-    local specification = [ property.translate-paths $(raw-properties) :
-        $(location) ] ;
-    specification = [ property.translate-indirect $(specification) :
-        $(jamfile-module) ] ;
     local project-id = [ project.attribute $(jamfile-module) id ] ;
     project-id ?= [ path.root $(location) [ path.pwd ] ] ;
-    specification = [ property.translate-dependencies $(specification) :
-        $(project-id) : $(location) ] ;
-    specification = [ property.expand-subfeatures-in-conditions $(specification)
-        ] ;
-    specification = [ property.make $(specification) ] ;
-    return [ property-set.create $(specification) ] ;
+    return [ property-set.create [ property.translate $(raw-properties)
+        : $(project-id) : $(location) : $(jamfile-module) ] ] ;
 }
 
 

@@ -51,6 +51,19 @@
   <xsl:key name="compounds-by-id" match="compounddef" use="@id"/>
   <xsl:key name="members-by-id" match="memberdef" use="@id" />
 
+  <!-- Add trailing slash to formuladir if missing -->
+
+  <xsl:variable name="boost.doxygen.formuladir.fixed">
+    <xsl:choose>
+      <xsl:when test="substring(boost.doxygen.formuladir, string-length(boost.doxygen.formuladir) - 1) = '/'">
+        <xsl:value-of select="$boost.doxygen.formuladir" />
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="concat($boost.doxygen.formuladir, '/')" />
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
   <xsl:strip-space elements="briefdescription detaileddescription inbodydescription"/>
 
   <xsl:template name="kind-error-message">
@@ -1151,6 +1164,18 @@
       <xsl:if test="@explicit = 'yes'">
         <xsl:attribute name="specifiers">explicit</xsl:attribute>
       </xsl:if>
+      <!-- CV Qualifiers -->
+      <xsl:if test="contains(argsstring/text(),'=delete') or contains(argsstring/text(),'=default')">
+        <xsl:attribute name="cv">
+          <!-- Cheat and add deleted and defaulted function markers to the CV qualifiers -->
+          <xsl:if test="contains(argsstring/text(),'=delete')">
+            <xsl:text>= delete</xsl:text>
+          </xsl:if>
+          <xsl:if test="contains(argsstring/text(),'=default')">
+            <xsl:text>= default</xsl:text>
+          </xsl:if>
+        </xsl:attribute>
+      </xsl:if>
       <xsl:call-template name="function.children"/>
     </constructor>
   </xsl:template>
@@ -1165,6 +1190,34 @@
   <!-- Handle Copy Assignment -->
   <xsl:template name="copy-assignment">
     <copy-assignment>
+      <!-- CV Qualifiers -->
+      <xsl:if test="not (@const='no' and @volatile='no')">
+        <xsl:attribute name="cv">
+          <xsl:if test="@const='yes'">
+            <xsl:text>const</xsl:text>
+          </xsl:if>
+          <xsl:if test="@volatile='yes'">
+            <xsl:if test="@const='yes'">
+              <xsl:text> </xsl:text>
+            </xsl:if>
+            <xsl:text>volatile</xsl:text>
+          </xsl:if>
+          <!-- Cheat and add deleted and defaulted function markers to the CV qualifiers -->
+          <xsl:if test="contains(argsstring/text(),'=delete')">
+            <xsl:if test="@const='yes' or @volatile='yes'">
+              <xsl:text> </xsl:text>
+            </xsl:if>
+            <xsl:text>= delete</xsl:text>
+          </xsl:if>
+          <xsl:if test="contains(argsstring/text(),'=default')">
+            <xsl:if test="@const='yes' or @volatile='yes'">
+              <xsl:text> </xsl:text>
+            </xsl:if>
+            <xsl:text>= default</xsl:text>
+          </xsl:if>
+        </xsl:attribute>
+      </xsl:if>
+
       <xsl:call-template name="function.children"/>
     </copy-assignment>
   </xsl:template>
@@ -1177,7 +1230,7 @@
       </xsl:attribute>
 
       <!-- CV Qualifiers -->
-      <xsl:if test="not (@const='no' and @volatile='no')">
+      <xsl:if test="not (@const='no' and @volatile='no') or contains(argsstring/text(),'=delete')">
         <xsl:attribute name="cv">
           <xsl:if test="@const='yes'">
             <xsl:text>const</xsl:text>
@@ -1187,6 +1240,13 @@
               <xsl:text> </xsl:text>
             </xsl:if>
             <xsl:text>volatile</xsl:text>
+          </xsl:if>
+          <!-- Cheat and add deleted function markers to the CV qualifiers -->
+          <xsl:if test="contains(argsstring/text(),'=delete')">
+            <xsl:if test="@const='yes' or @volatile='yes'">
+              <xsl:text> </xsl:text>
+            </xsl:if>
+            <xsl:text>= delete</xsl:text>
           </xsl:if>
         </xsl:attribute>
       </xsl:if>
@@ -1212,7 +1272,7 @@
       </xsl:attribute>
 
       <!-- CV Qualifiers -->
-      <xsl:if test="not (@const='no' and @volatile='no')">
+      <xsl:if test="not (@const='no' and @volatile='no') or contains(argsstring/text(),'=delete')">
         <xsl:attribute name="cv">
           <xsl:if test="@const='yes'">
             <xsl:text>const</xsl:text>
@@ -1222,6 +1282,13 @@
               <xsl:text> </xsl:text>
             </xsl:if>
             <xsl:text>volatile</xsl:text>
+          </xsl:if>
+          <!-- Cheat and add deleted function markers to the CV qualifiers -->
+          <xsl:if test="contains(argsstring/text(),'=default')">
+            <xsl:if test="@const='yes' or @volatile='yes'">
+              <xsl:text> </xsl:text>
+            </xsl:if>
+            <xsl:text>= default</xsl:text>
           </xsl:if>
         </xsl:attribute>
       </xsl:if>
@@ -1603,7 +1670,7 @@
             <imageobject role="html">
               <imagedata format="PNG" align="center">
                 <xsl:attribute name="fileref">
-                  <xsl:value-of select="concat(concat(concat($boost.doxygen.formuladir, 'form_'), @id), '.png')"/>
+                  <xsl:value-of select="concat(concat(concat($boost.doxygen.formuladir.fixed, 'form_'), @id), '.png')"/>
                 </xsl:attribute>
               </imagedata>
             </imageobject>
@@ -1624,7 +1691,7 @@
             <imageobject role="html">
               <imagedata format="PNG">
                 <xsl:attribute name="fileref">
-                  <xsl:value-of select="concat(concat(concat($boost.doxygen.formuladir, 'form_'), @id), '.png')"/>
+                  <xsl:value-of select="concat(concat(concat($boost.doxygen.formuladir.fixed, 'form_'), @id), '.png')"/>
                 </xsl:attribute>
               </imagedata>
             </imageobject>

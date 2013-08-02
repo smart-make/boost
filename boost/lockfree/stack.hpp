@@ -189,7 +189,7 @@ public:
     void reserve(size_type n)
     {
         BOOST_STATIC_ASSERT(!has_capacity);
-        pool.reserve(n);
+        pool.template reserve<true>(n);
     }
 
     /** Allocate n nodes for freelist
@@ -201,7 +201,7 @@ public:
     void reserve_unsafe(size_type n)
     {
         BOOST_STATIC_ASSERT(!has_capacity);
-        pool.reserve_unsafe(n);
+        pool.template reserve<false>(n);
     }
 
     /** Destroys stack, free all nodes from freelist.
@@ -435,21 +435,9 @@ public:
     bool pop(U & ret)
     {
         BOOST_STATIC_ASSERT((boost::is_convertible<T, U>::value));
-        tagged_node_handle old_tos = tos.load(detail::memory_order_consume);
+        detail::consume_via_copy<U> consumer(ret);
 
-        for (;;) {
-            node * old_tos_pointer = pool.get_pointer(old_tos);
-            if (!old_tos_pointer)
-                return false;
-
-            tagged_node_handle new_tos(old_tos_pointer->next, old_tos.get_tag() + 1);
-
-            if (tos.compare_exchange_weak(old_tos, new_tos)) {
-                detail::copy_payload(old_tos_pointer->v, ret);
-                pool.template destruct<true>(old_tos);
-                return true;
-            }
-        }
+        return consume_one(consumer);
     }
 
 
@@ -486,7 +474,7 @@ public:
             return false;
 
         node * new_tos_ptr = pool.get_pointer(old_tos_pointer->next);
-        tagged_node_handle new_tos(pool.get_handle(new_tos_ptr), old_tos.get_tag() + 1);
+        tagged_node_handle new_tos(pool.get_handle(new_tos_ptr), old_tos.get_next_tag());
 
         tos.store(new_tos, memory_order_relaxed);
         detail::copy_payload(old_tos_pointer->v, ret);
@@ -505,24 +493,42 @@ public:
     template <typename Functor>
     bool consume_one(Functor & f)
     {
-        T element;
-        bool success = pop(element);
-        if (success)
-            f(element);
+        tagged_node_handle old_tos = tos.load(detail::memory_order_consume);
 
-        return success;
+        for (;;) {
+            node * old_tos_pointer = pool.get_pointer(old_tos);
+            if (!old_tos_pointer)
+                return false;
+
+            tagged_node_handle new_tos(old_tos_pointer->next, old_tos.get_next_tag());
+
+            if (tos.compare_exchange_weak(old_tos, new_tos)) {
+                f(old_tos_pointer->v);
+                pool.template destruct<true>(old_tos);
+                return true;
+            }
+        }
     }
 
     /// \copydoc boost::lockfree::stack::consume_one(Functor & rhs)
     template <typename Functor>
     bool consume_one(Functor const & f)
     {
-        T element;
-        bool success = pop(element);
-        if (success)
-            f(element);
+        tagged_node_handle old_tos = tos.load(detail::memory_order_consume);
 
-        return success;
+        for (;;) {
+            node * old_tos_pointer = pool.get_pointer(old_tos);
+            if (!old_tos_pointer)
+                return false;
+
+            tagged_node_handle new_tos(old_tos_pointer->next, old_tos.get_next_tag());
+
+            if (tos.compare_exchange_weak(old_tos, new_tos)) {
+                f(old_tos_pointer->v);
+                pool.template destruct<true>(old_tos);
+                return true;
+            }
+        }
     }
 
     /** consumes all elements via a functor

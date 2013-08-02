@@ -22,19 +22,20 @@
 #include <boost/geometry/index/detail/config_begin.hpp>
 
 #include <boost/geometry/index/detail/assert.hpp>
+#include <boost/geometry/index/detail/exception.hpp>
 
 #include <boost/geometry/index/detail/rtree/options.hpp>
 
 #include <boost/geometry/index/indexable.hpp>
 #include <boost/geometry/index/equal_to.hpp>
 
-#include <boost/geometry/index/detail/indexable.hpp>
 #include <boost/geometry/index/detail/translator.hpp>
 
 #include <boost/geometry/index/predicates.hpp>
 #include <boost/geometry/index/distance_predicates.hpp>
 #include <boost/geometry/index/detail/rtree/adaptors.hpp>
 
+#include <boost/geometry/index/detail/meta.hpp>
 #include <boost/geometry/index/detail/utilities.hpp>
 #include <boost/geometry/index/detail/rtree/node/node.hpp>
 
@@ -45,7 +46,7 @@
 #include <boost/geometry/index/detail/rtree/visitors/copy.hpp>
 #include <boost/geometry/index/detail/rtree/visitors/destroy.hpp>
 #include <boost/geometry/index/detail/rtree/visitors/spatial_query.hpp>
-#include <boost/geometry/index/detail/rtree/visitors/nearest_query.hpp>
+#include <boost/geometry/index/detail/rtree/visitors/distance_query.hpp>
 #include <boost/geometry/index/detail/rtree/visitors/count.hpp>
 #include <boost/geometry/index/detail/rtree/visitors/children_box.hpp>
 
@@ -54,7 +55,22 @@
 #include <boost/geometry/index/detail/rtree/rstar/rstar.hpp>
 //#include <boost/geometry/extensions/index/detail/rtree/kmeans/kmeans.hpp>
 
+#include <boost/geometry/index/detail/rtree/pack_create.hpp>
+
 #include <boost/geometry/index/inserter.hpp>
+
+#include <boost/geometry/index/detail/rtree/utilities/view.hpp>
+
+#ifdef BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
+// query iterators
+#include <boost/geometry/index/detail/rtree/query_iterators.hpp>
+#ifdef BOOST_GEOMETRY_INDEX_DETAIL_ENABLE_TYPE_ERASED_ITERATORS
+// type-erased iterators
+#include <boost/geometry/index/detail/type_erased_iterators.hpp>
+#endif
+// serialization
+#include <boost/geometry/index/detail/serialization.hpp>
+#endif
 
 // TODO change the name to bounding_tree
 
@@ -116,14 +132,12 @@ public:
     typedef Value value_type;
     /*! \brief R-tree parameters type. */
     typedef Parameters parameters_type;
-    /*! \brief The type of allocator used by the container. */
-    typedef Allocator allocator_type;
-    /*! \brief Unsigned integral type used by the container. */
-    typedef typename allocator_type::size_type size_type;
     /*! \brief The function object extracting Indexable from Value. */
     typedef IndexableGetter indexable_getter;
     /*! \brief The function object comparing objects of type Value. */
     typedef EqualTo value_equal;
+    /*! \brief The type of allocator used by the container. */
+    typedef Allocator allocator_type;
 
     // TODO: SHOULD THIS TYPE BE REMOVED?
     /*! \brief The Indexable type to which Value is translated. */
@@ -132,11 +146,17 @@ public:
     >::type indexable_type;
 
     /*! \brief The Box type used by the R-tree. */
-    typedef typename index::detail::default_box_type<indexable_type>::type bounds_type;
+    typedef geometry::model::box<
+                geometry::model::point<
+                    typename coordinate_type<indexable_type>::type,
+                    dimension<indexable_type>::value,
+                    typename coordinate_system<indexable_type>::type
+                >
+            >
+    bounds_type;
 
-#if !defined(BOOST_GEOMETRY_INDEX_DETAIL_ENABLE_DEBUG_INTERFACE)
 private:
-#endif
+
     typedef detail::translator<IndexableGetter, EqualTo> translator_type;
 
     typedef bounds_type box_type;
@@ -150,6 +170,24 @@ private:
 
     typedef typename allocators_type::node_pointer node_pointer;
     typedef ::boost::container::allocator_traits<Allocator> allocator_traits_type;
+    typedef detail::rtree::node_auto_ptr<value_type, options_type, translator_type, box_type, allocators_type> node_auto_ptr;
+
+    friend class detail::rtree::utilities::view<rtree>;
+
+public:
+
+    /*! \brief Type of reference to Value. */
+    typedef typename allocators_type::reference reference;
+    /*! \brief Type of reference to const Value. */
+    typedef typename allocators_type::const_reference const_reference;
+    /*! \brief Type of pointer to Value. */
+    typedef typename allocators_type::pointer pointer;
+    /*! \brief Type of pointer to const Value. */
+    typedef typename allocators_type::const_pointer const_pointer;
+    /*! \brief Type of difference type. */
+    typedef typename allocators_type::difference_type difference_type;
+    /*! \brief Unsigned integral type used by the container. */
+    typedef typename allocators_type::size_type size_type;
 
 public:
 
@@ -200,8 +238,7 @@ public:
     \par Throws
     \li If allocator copy constructor throws.
     \li If Value copy constructor or copy assignment throws.
-    \li If allocation throws.
-    \li When memory allocation for Node fails.
+    \li If allocation throws or returns invalid value.
     */
     template<typename Iterator>
     inline rtree(Iterator first, Iterator last,
@@ -211,15 +248,12 @@ public:
                  allocator_type const& allocator = allocator_type())
         : m_members(getter, equal, parameters, allocator)
     {
-        try
-        {
-            this->insert(first, last);
-        }
-        catch(...)
-        {
-            this->raw_destroy(*this);
-            throw;
-        }
+        typedef detail::rtree::pack<value_type, options_type, translator_type, box_type, allocators_type> pack;
+        size_type vc = 0, ll = 0;
+        m_members.root = pack::apply(first, last, vc, ll,
+                                     m_members.parameters(), m_members.translator(), m_members.allocators());
+        m_members.values_count = vc;
+        m_members.leafs_level = ll;
     }
 
     /*!
@@ -234,8 +268,7 @@ public:
     \par Throws
     \li If allocator copy constructor throws.
     \li If Value copy constructor or copy assignment throws.
-    \li If allocation throws.
-    \li When memory allocation for Node fails.
+    \li If allocation throws or returns invalid value.
     */
     template<typename Range>
     inline explicit rtree(Range const& rng,
@@ -245,15 +278,12 @@ public:
                           allocator_type const& allocator = allocator_type())
         : m_members(getter, equal, parameters, allocator)
     {
-        try
-        {
-            this->insert(rng);
-        }
-        catch(...)
-        {
-            this->raw_destroy(*this);
-            throw;
-        }
+        typedef detail::rtree::pack<value_type, options_type, translator_type, box_type, allocators_type> pack;
+        size_type vc = 0, ll = 0;
+        m_members.root = pack::apply(::boost::begin(rng), ::boost::end(rng), vc, ll,
+                                     m_members.parameters(), m_members.translator(), m_members.allocators());
+        m_members.values_count = vc;
+        m_members.leafs_level = ll;
     }
 
     /*!
@@ -277,8 +307,7 @@ public:
     \par Throws
     \li If allocator copy constructor throws.
     \li If Value copy constructor throws.
-    \li If allocation throws.
-    \li When memory allocation for Node fails.
+    \li If allocation throws or returns invalid value.
     */
     inline rtree(rtree const& src)
         : m_members(src.m_members.indexable_getter(),
@@ -300,8 +329,7 @@ public:
     \par Throws
     \li If allocator copy constructor throws.
     \li If Value copy constructor throws.
-    \li If allocation throws.
-    \li When memory allocation for Node fails.
+    \li If allocation throws or returns invalid value.
     */
     inline rtree(rtree const& src, allocator_type const& allocator)
         : m_members(src.m_members.indexable_getter(),
@@ -343,8 +371,7 @@ public:
     \par Throws
     \li If allocator copy constructor throws.
     \li If Value copy constructor throws (only if allocators aren't equal).
-    \li If allocation throws (only if allocators aren't equal).
-    \li When memory allocation for Node fails (only if allocators aren't equal).
+    \li If allocation throws or returns invalid value (only if allocators aren't equal).
     */
     inline rtree(BOOST_RV_REF(rtree) src, allocator_type const& allocator)
         : m_members(src.m_members.indexable_getter(),
@@ -374,7 +401,7 @@ public:
     \par Throws
     \li If Value copy constructor throws.
     \li If allocation throws.
-    \li When nodes allocation fails.
+    \li If allocation throws or returns invalid value.
     */
     inline rtree & operator=(BOOST_COPY_ASSIGN_REF(rtree) src)
     {
@@ -412,8 +439,7 @@ public:
     \par Throws
     Only if allocators aren't equal.
     \li If Value copy constructor throws.
-    \li If allocation throws.
-    \li When nodes allocation fails.
+    \li If allocation throws or returns invalid value.
     */
     inline rtree & operator=(BOOST_RV_REF(rtree) src)
     {
@@ -492,12 +518,13 @@ public:
 
     \par Throws
     \li If Value copy constructor or copy assignment throws.
-    \li If allocation throws.
-    \li When nodes allocation fails.
+    \li If allocation throws or returns invalid value.
 
     \warning
-    This operation is not thread safe. If it throws, the R-tree may be left in an inconsistent state,
-    elements must not be inserted or removed, methods may return invalid data.
+    This operation only guarantees that there will be no memory leaks.
+    After an exception is thrown the R-tree may be left in an inconsistent state,
+    elements must not be inserted or removed. Other operations are allowed however
+    some of them may return invalid data.
     */
     inline void insert(value_type const& value)
     {
@@ -515,12 +542,13 @@ public:
 
     \par Throws
     \li If Value copy constructor or copy assignment throws.
-    \li If allocation throws.
-    \li When nodes allocation fails.
+    \li If allocation throws or returns invalid value.
 
     \warning
-    This operation is not thread safe. If it throws, the R-tree may be left in an inconsistent state,
-    elements must not be inserted or removed, methods may return invalid data.
+    This operation only guarantees that there will be no memory leaks.
+    After an exception is thrown the R-tree may be left in an inconsistent state,
+    elements must not be inserted or removed. Other operations are allowed however
+    some of them may return invalid data.
     */
     template <typename Iterator>
     inline void insert(Iterator first, Iterator last)
@@ -539,16 +567,19 @@ public:
 
     \par Throws
     \li If Value copy constructor or copy assignment throws.
-    \li If allocation throws.
-    \li When nodes allocation fails.
+    \li If allocation throws or returns invalid value.
 
     \warning
-    This operation is not thread safe. If it throws, the R-tree may be left in an inconsistent state,
-    elements must not be inserted or removed, methods may return invalid data.
+    This operation only guarantees that there will be no memory leaks.
+    After an exception is thrown the R-tree may be left in an inconsistent state,
+    elements must not be inserted or removed. Other operations are allowed however
+    some of them may return invalid data.
     */
     template <typename Range>
     inline void insert(Range const& rng)
     {
+        BOOST_MPL_ASSERT_MSG((detail::is_range<Range>::value), PASSED_OBJECT_IS_NOT_A_RANGE, (Range));
+
         if ( !m_members.root )
             this->raw_create();
 
@@ -569,12 +600,13 @@ public:
 
     \par Throws
     \li If Value copy constructor or copy assignment throws.
-    \li If allocation throws.
-    \li When nodes allocation fails.
+    \li If allocation throws or returns invalid value.
 
     \warning
-    This operation is not thread safe. If it throws, the R-tree may be left in an inconsistent state,
-    elements must not be inserted or removed, methods may return invalid data.
+    This operation only guarantees that there will be no memory leaks.
+    After an exception is thrown the R-tree may be left in an inconsistent state,
+    elements must not be inserted or removed. Other operations are allowed however
+    some of them may return invalid data.
     */
     inline size_type remove(value_type const& value)
     {
@@ -596,12 +628,13 @@ public:
 
     \par Throws
     \li If Value copy constructor or copy assignment throws.
-    \li If allocation throws.
-    \li When nodes allocation fails.
+    \li If allocation throws or returns invalid value.
 
     \warning
-    This operation is not thread safe. If it throws, the R-tree may be left in an inconsistent state,
-    elements must not be inserted or removed, methods may return invalid data.
+    This operation only guarantees that there will be no memory leaks.
+    After an exception is thrown the R-tree may be left in an inconsistent state,
+    elements must not be inserted or removed. Other operations are allowed however
+    some of them may return invalid data.
     */
     template <typename Iterator>
     inline size_type remove(Iterator first, Iterator last)
@@ -625,16 +658,19 @@ public:
 
     \par Throws
     \li If Value copy constructor or copy assignment throws.
-    \li If allocation throws.
-    \li When nodes allocation fails.
+    \li If allocation throws or returns invalid value.
 
     \warning
-    This operation is not thread safe. If it throws, the R-tree may be left in an inconsistent state,
-    elements must not be inserted or removed, methods may return invalid data.
+    This operation only guarantees that there will be no memory leaks.
+    After an exception is thrown the R-tree may be left in an inconsistent state,
+    elements must not be inserted or removed. Other operations are allowed however
+    some of them may return invalid data.
     */
     template <typename Range>
     inline size_type remove(Range const& rng)
     {
+        BOOST_MPL_ASSERT_MSG((detail::is_range<Range>::value), PASSED_OBJECT_IS_NOT_A_RANGE, (Range));
+
         size_type result = 0;
         typedef typename boost::range_const_iterator<Range>::type It;
         for ( It it = boost::const_begin(rng); it != boost::const_end(rng) ; ++it )
@@ -691,15 +727,13 @@ public:
     tree.query(bgi::overlaps(box) && bgi::satisfies(my_fun), std::back_inserter(result));
     // return 5 elements nearest to pt and elements are intersecting box
     tree.query(bgi::nearest(pt, 5) && bgi::intersects(box), std::back_inserter(result));
-    // return 5 elements which centroids are nearest to pt and elements aren't within box
-    tree.query(bgi::nearest(bgi::to_centroid(pt), 5) && !bgi::within(box), std::back_inserter(result));
     \endverbatim
 
     \par Throws
     If Value copy constructor or copy assignment throws.
 
     \warning
-    Only one \c nearest() perdicate may be passed to the query.
+    Only one \c nearest() perdicate may be passed to the query. Passing more of them results in compile-time error.
     
     \param predicates   Predicates.
     \param out_it       The output iterator, e.g. generated by std::back_inserter().
@@ -712,12 +746,95 @@ public:
         if ( !m_members.root )
             return 0;
 
-        static const unsigned nearest_count = detail::predicates_count_nearest<Predicates>::value;
-        static const bool is_nearest = 0 < nearest_count;
-        BOOST_MPL_ASSERT_MSG((nearest_count <= 1), PASS_ONLY_ONE_NEAREST_PREDICATE, (Predicates));
+        static const unsigned distance_predicates_count = detail::predicates_count_distance<Predicates>::value;
+        static const bool is_distance_predicate = 0 < distance_predicates_count;
+        BOOST_MPL_ASSERT_MSG((distance_predicates_count <= 1), PASS_ONLY_ONE_DISTANCE_PREDICATE, (Predicates));
 
-        return query_dispatch(predicates, out_it, boost::mpl::bool_<is_nearest>());
+        return query_dispatch(predicates, out_it, boost::mpl::bool_<is_distance_predicate>());
     }
+
+#ifdef BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
+
+#ifdef BOOST_GEOMETRY_INDEX_DETAIL_ENABLE_TYPE_ERASED_ITERATORS
+
+    // BEWARE!
+    // Don't use this type-erased iterator after assigning values returned by qbegin(Pred) and qend()
+    // e.g. don't pass them into the std::copy() or compare them like this:
+    // const_query_iterator i1 = qbegin(...);
+    // const_query_iterator i2 = qend();
+    // i1 == i2; // BAM!
+    // now this will cause undefined behaviour.
+    // using native types is ok:
+    // qbegin(...) == qend();
+
+    typedef typename index::detail::single_pass_iterator_type<
+        value_type, const_reference, const_pointer, difference_type
+    >::type const_query_iterator;
+
+#endif // BOOST_GEOMETRY_INDEX_DETAIL_ENABLE_TYPE_ERASED_ITERATORS
+
+    template <typename Predicates>
+    typename boost::mpl::if_c<
+        detail::predicates_count_distance<Predicates>::value == 0,
+        detail::rtree::spatial_query_iterator<value_type, options_type, translator_type, box_type, allocators_type, Predicates>,
+        detail::rtree::distance_query_iterator<
+            value_type, options_type, translator_type, box_type, allocators_type, Predicates,
+            detail::predicates_find_distance<Predicates>::value
+        >
+    >::type
+    qbegin(Predicates const& predicates) const
+    {
+        static const unsigned distance_predicates_count = detail::predicates_count_distance<Predicates>::value;
+        BOOST_MPL_ASSERT_MSG((distance_predicates_count <= 1), PASS_ONLY_ONE_DISTANCE_PREDICATE, (Predicates));
+
+        typedef typename boost::mpl::if_c<
+            detail::predicates_count_distance<Predicates>::value == 0,
+            detail::rtree::spatial_query_iterator<value_type, options_type, translator_type, box_type, allocators_type, Predicates>,
+            detail::rtree::distance_query_iterator<
+                value_type, options_type, translator_type, box_type, allocators_type, Predicates,
+                detail::predicates_find_distance<Predicates>::value
+            >
+        >::type iterator_type;
+
+        if ( !m_members.root )
+            return iterator_type(m_members.translator(), predicates);
+
+        return iterator_type(m_members.root, m_members.translator(), predicates);
+    }
+
+    template <typename Predicates>
+    typename boost::mpl::if_c<
+        detail::predicates_count_distance<Predicates>::value == 0,
+        detail::rtree::spatial_query_iterator<value_type, options_type, translator_type, box_type, allocators_type, Predicates>,
+        detail::rtree::distance_query_iterator<
+            value_type, options_type, translator_type, box_type, allocators_type, Predicates,
+            detail::predicates_find_distance<Predicates>::value
+        >
+    >::type
+    qend(Predicates const& predicates) const
+    {
+        static const unsigned distance_predicates_count = detail::predicates_count_distance<Predicates>::value;
+        BOOST_MPL_ASSERT_MSG((distance_predicates_count <= 1), PASS_ONLY_ONE_DISTANCE_PREDICATE, (Predicates));
+
+        typedef typename boost::mpl::if_c<
+            detail::predicates_count_distance<Predicates>::value == 0,
+            detail::rtree::spatial_query_iterator<value_type, options_type, translator_type, box_type, allocators_type, Predicates>,
+            detail::rtree::distance_query_iterator<
+                value_type, options_type, translator_type, box_type, allocators_type, Predicates,
+                detail::predicates_find_distance<Predicates>::value
+            >
+        >::type iterator_type;
+
+        return iterator_type(m_members.translator(), predicates);
+    }
+
+    detail::rtree::end_query_iterator<value_type, allocators_type>
+    qend() const
+    {
+        return detail::rtree::end_query_iterator<value_type, allocators_type>();
+    }
+
+#endif // BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
 
     /*!
     \brief Returns the number of stored values.
@@ -863,9 +980,8 @@ public:
         return m_members.allocators().allocator();
     }
 
-#if !defined(BOOST_GEOMETRY_INDEX_DETAIL_ENABLE_DEBUG_INTERFACE)
 private:
-#endif
+
     /*!
     \brief Returns the translator object.
 
@@ -898,21 +1014,6 @@ private:
     }
 
     /*!
-    \brief Returns the number of stored objects. Same as size().
-
-    This function is not a part of the 'official' interface.
-
-    \return     The number of stored objects.
-
-    \par Throws
-    Nothing.
-    */
-    inline size_type values_count() const
-    {
-        return m_members.values_count;
-    }
-
-    /*!
     \brief Returns the depth of the R-tree.
 
     This function is not a part of the 'official' interface.
@@ -928,6 +1029,7 @@ private:
     }
 
 private:
+
     /*!
     \pre Root node must exist - m_root != 0.
 
@@ -1058,6 +1160,7 @@ private:
             dst.m_members.parameters() = src.m_members.parameters();
         }
 
+        // TODO use node_auto_ptr
         if ( dst.m_members.root )
         {
             detail::rtree::visitors::destroy<value_type, options_type, translator_type, box_type, allocators_type>
@@ -1078,7 +1181,7 @@ private:
     strong
     */
     template <typename Predicates, typename OutIter>
-    size_type query_dispatch(Predicates const& predicates, OutIter out_it, boost::mpl::bool_<false> const& /*is_nearest*/) const
+    size_type query_dispatch(Predicates const& predicates, OutIter out_it, boost::mpl::bool_<false> const& /*is_distance_predicate*/) const
     {
         detail::rtree::visitors::spatial_query<value_type, options_type, translator_type, box_type, allocators_type, Predicates, OutIter>
             find_v(m_members.translator(), predicates, out_it);
@@ -1095,51 +1198,83 @@ private:
     strong
     */
     template <typename Predicates, typename OutIter>
-    size_type query_dispatch(Predicates const& predicates, OutIter out_it, boost::mpl::bool_<true> const& /*is_nearest*/) const
+    size_type query_dispatch(Predicates const& predicates, OutIter out_it, boost::mpl::bool_<true> const& /*is_distance_predicate*/) const
     {
-        static const unsigned nearest_index = detail::predicates_find_nearest<Predicates>::value;
-        typedef detail::predicates_element<nearest_index, Predicates> element_access;
-        typename element_access::type const& nearest_pred = element_access::get(predicates);
-
-        return raw_nearest_k(nearest_pred.distance_predicates, nearest_pred.count, predicates, out_it);
-    }
-
-    /*!
-    \brief Find k values meeting distances and spatial predicates.
-
-    \par Exception-safety
-    strong
-    */
-    template <typename DistancesPredicates, typename Predicates, typename OutIter>
-    inline size_type raw_nearest_k(DistancesPredicates const& dpred, size_t k, Predicates const& pred, OutIter out_it) const
-    {
-        typedef typename detail::point_relation<DistancesPredicates>::type point_relation;
-        typedef typename detail::relation<point_relation>::value_type point_type;
-
-        typedef detail::rtree::visitors::nearest_query_result_k<
-            value_type,
-            translator_type,
-            point_type,
-            OutIter
-        > result_type;
-
-        result_type result(k, out_it);
-
-        detail::rtree::visitors::nearest_query<
+        static const unsigned distance_predicate_index = detail::predicates_find_distance<Predicates>::value;
+        detail::rtree::visitors::distance_query<
             value_type,
             options_type,
             translator_type,
             box_type,
             allocators_type,
-            DistancesPredicates,
             Predicates,
-            result_type
-        > nearest_v(m_members.parameters(), m_members.translator(), dpred, pred, result);
+            distance_predicate_index,
+            OutIter
+        > distance_v(m_members.parameters(), m_members.translator(), predicates, out_it);
 
-        detail::rtree::apply_visitor(nearest_v, *m_members.root);
+        detail::rtree::apply_visitor(distance_v, *m_members.root);
 
-        return result.finish();
+        return distance_v.finish();
     }
+
+#ifdef BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
+
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void save(Archive & ar, unsigned int version) const
+    {
+        namespace bs = boost::serialization;
+
+        detail::serialization_save(m_members.parameters(), "parameters", ar);
+
+        ar << bs::make_nvp("values_count", m_members.values_count);
+        ar << bs::make_nvp("leafs_level", m_members.leafs_level);
+
+        if ( m_members.values_count )
+        {
+            BOOST_GEOMETRY_INDEX_ASSERT(m_members.root, "root shouldn't be null_ptr");
+
+            detail::rtree::visitors::save<Archive, Value, options_type, translator_type, box_type, allocators_type> save_v(ar, version);
+            detail::rtree::apply_visitor(save_v, *m_members.root);
+        }
+    }
+
+    template<class Archive>
+    void load(Archive & ar, unsigned int version)
+    {
+        namespace bs = boost::serialization;
+
+        parameters_type params = detail::serialization_load<parameters_type>("parameters", ar);
+        
+        size_type values_count, leafs_level;
+        ar >> bs::make_nvp("values_count", values_count);
+        ar >> bs::make_nvp("leafs_level", leafs_level);
+
+        node_pointer n(0);
+        if ( 0 < values_count )
+        {
+            size_type loaded_values_count = 0;
+            n = detail::rtree::load<value_type, options_type, translator_type, box_type, allocators_type>
+                ::apply(ar, version, leafs_level, loaded_values_count, params, m_members.translator(), m_members.allocators());                                        // MAY THROW
+
+            node_auto_ptr remover(n, m_members.allocators());
+            if ( loaded_values_count != values_count )
+                BOOST_THROW_EXCEPTION(std::runtime_error("unexpected number of values")); // TODO change exception type
+            remover.release();
+        }
+
+        m_members.parameters() = params;
+        m_members.values_count = values_count;
+        m_members.leafs_level = leafs_level;
+
+        node_auto_ptr remover(m_members.root, m_members.allocators());
+        m_members.root = n;
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
+#endif // BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
 
     struct members_holder
         : public translator_type
@@ -1363,15 +1498,13 @@ bgi::query(tree, bgi::intersects(poly) && !bgi::within(box), std::back_inserter(
 bgi::query(tree, bgi::overlaps(box) && bgi::satisfies(my_fun), std::back_inserter(result));
 // return 5 elements nearest to pt and elements are intersecting box
 bgi::query(tree, bgi::nearest(pt, 5) && bgi::intersects(box), std::back_inserter(result));
-// return 5 elements which centroids are nearest to pt and elements aren't within box
-bgi::query(tree, bgi::nearest(bgi::to_centroid(pt), 5) && !bgi::within(box), std::back_inserter(result));
 \endverbatim
 
 \par Throws
 If Value copy constructor or copy assignment throws.
 
 \warning
-Only one \c nearest() perdicate may be passed to the query.
+Only one \c nearest() perdicate may be passed to the query. Passing more of them results in compile-time error.
 
 \ingroup rtree_functions
 

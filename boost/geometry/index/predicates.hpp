@@ -15,9 +15,6 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/mpl/assert.hpp>
 
-// TODO: awulkiew - temporary
-#include <boost/geometry/algorithms/covered_by.hpp>
-
 #include <boost/geometry/index/detail/predicates.hpp>
 #include <boost/geometry/index/detail/tuples.hpp>
 
@@ -26,6 +23,35 @@
 */
 
 namespace boost { namespace geometry { namespace index {
+
+#ifdef BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
+
+/*!
+\brief Generate \c contains() predicate.
+
+Generate a predicate defining Value and Geometry relationship.
+Value will be returned by the query if <tt>bg::within(Geometry, Indexable)</tt>
+returns true.
+
+\par Example
+\verbatim
+bgi::query(spatial_index, bgi::contains(box), std::back_inserter(result));
+\endverbatim
+
+\ingroup predicates
+
+\tparam Geometry    The Geometry type.
+
+\param g            The Geometry object.
+*/
+template <typename Geometry> inline
+detail::spatial_predicate<Geometry, detail::contains_tag, false>
+contains(Geometry const& g)
+{
+    return detail::spatial_predicate<Geometry, detail::contains_tag, false>(g);
+}
+
+#endif // BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
 
 /*!
 \brief Generate \c covered_by() predicate.
@@ -45,11 +71,41 @@ bgi::query(spatial_index, bgi::covered_by(box), std::back_inserter(result));
 
 \param g            The Geometry object.
 */
-template <typename Geometry>
-inline detail::covered_by<Geometry> covered_by(Geometry const& g)
+template <typename Geometry> inline
+detail::spatial_predicate<Geometry, detail::covered_by_tag, false>
+covered_by(Geometry const& g)
 {
-    return detail::covered_by<Geometry>(g);
+    return detail::spatial_predicate<Geometry, detail::covered_by_tag, false>(g);
 }
+
+#ifdef BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
+
+/*!
+\brief Generate \c covers() predicate.
+
+Generate a predicate defining Value and Geometry relationship.
+Value will be returned by the query if <tt>bg::covered_by(Geometry, Indexable)</tt>
+returns true.
+
+\par Example
+\verbatim
+bgi::query(spatial_index, bgi::covers(box), std::back_inserter(result));
+\endverbatim
+
+\ingroup predicates
+
+\tparam Geometry    The Geometry type.
+
+\param g            The Geometry object.
+*/
+template <typename Geometry> inline
+detail::spatial_predicate<Geometry, detail::covers_tag, false>
+covers(Geometry const& g)
+{
+    return detail::spatial_predicate<Geometry, detail::covers_tag, false>(g);
+}
+
+#endif // BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
 
 /*!
 \brief Generate \c disjoint() predicate.
@@ -69,10 +125,11 @@ bgi::query(spatial_index, bgi::disjoint(box), std::back_inserter(result));
 
 \param g            The Geometry object.
 */
-template <typename Geometry>
-inline detail::disjoint<Geometry> disjoint(Geometry const& g)
+template <typename Geometry> inline
+detail::spatial_predicate<Geometry, detail::disjoint_tag, false>
+disjoint(Geometry const& g)
 {
-    return detail::disjoint<Geometry>(g);
+    return detail::spatial_predicate<Geometry, detail::disjoint_tag, false>(g);
 }
 
 /*!
@@ -95,10 +152,11 @@ bgi::query(spatial_index, bgi::intersects(polygon), std::back_inserter(result));
 
 \param g            The Geometry object.
 */
-template <typename Geometry>
-inline detail::intersects<Geometry> intersects(Geometry const& g)
+template <typename Geometry> inline
+detail::spatial_predicate<Geometry, detail::intersects_tag, false>
+intersects(Geometry const& g)
 {
-    return detail::intersects<Geometry>(g);
+    return detail::spatial_predicate<Geometry, detail::intersects_tag, false>(g);
 }
 
 /*!
@@ -119,30 +177,36 @@ bgi::query(spatial_index, bgi::overlaps(box), std::back_inserter(result));
 
 \param g            The Geometry object.
 */
-template <typename Geometry>
-inline detail::overlaps<Geometry> overlaps(Geometry const& g)
+template <typename Geometry> inline
+detail::spatial_predicate<Geometry, detail::overlaps_tag, false>
+overlaps(Geometry const& g)
 {
-    return detail::overlaps<Geometry>(g);
+    return detail::spatial_predicate<Geometry, detail::overlaps_tag, false>(g);
 }
 
-//*!
-//\brief Generate \c touches() predicate.
-//
-//Generate a predicate defining Value and Geometry relationship.
-//Value will be returned by the query if <tt>bg::touches(Indexable, Geometry)</tt>
-//returns true.
-//
-//\ingroup predicates
-//
-//\tparam Geometry    The Geometry type.
-//
-//\param g            The Geometry object.
-//*/
-//template <typename Geometry>
-//inline detail::touches<Geometry> touches(Geometry const& g)
-//{
-//    return detail::touches<Geometry>(g);
-//}
+#ifdef BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
+
+/*!
+\brief Generate \c touches() predicate.
+
+Generate a predicate defining Value and Geometry relationship.
+Value will be returned by the query if <tt>bg::touches(Indexable, Geometry)</tt>
+returns true.
+
+\ingroup predicates
+
+\tparam Geometry    The Geometry type.
+
+\param g            The Geometry object.
+*/
+template <typename Geometry> inline
+detail::spatial_predicate<Geometry, detail::touches_tag, false>
+touches(Geometry const& g)
+{
+    return detail::spatial_predicate<Geometry, detail::touches_tag, false>(g);
+}
+
+#endif // BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
 
 /*!
 \brief Generate \c within() predicate.
@@ -162,10 +226,11 @@ bgi::query(spatial_index, bgi::within(box), std::back_inserter(result));
 
 \param g            The Geometry object.
 */
-template <typename Geometry>
-inline detail::within<Geometry> within(Geometry const& g)
+template <typename Geometry> inline
+detail::spatial_predicate<Geometry, detail::within_tag, false>
+within(Geometry const& g)
 {
-    return detail::within<Geometry>(g);
+    return detail::spatial_predicate<Geometry, detail::within_tag, false>(g);
 }
 
 /*!
@@ -175,10 +240,10 @@ A wrapper around user-defined UnaryPredicate checking if Value should be returne
 
 \par Example
 \verbatim
-bool is_red(__value__ const& v) { return v.is_red(); }
+bool is_red(Value const& v) { return v.is_red(); }
 
 struct is_red_o {
-template <typename Value> bool operator()(__value__ const& v) { return v.is_red(); }
+template <typename Value> bool operator()(Value const& v) { return v.is_red(); }
 }
 
 // ...
@@ -190,7 +255,7 @@ rt.query(index::intersects(box) && index::satisfies(is_red_o()),
 std::back_inserter(result));
 
 #ifndef BOOST_NO_CXX11_LAMBDAS
-rt.query(index::intersects(box) && index::satisfies([](__value__ const& v) { return v.is_red(); }),
+rt.query(index::intersects(box) && index::satisfies([](Value const& v) { return v.is_red(); }),
 std::back_inserter(result));
 #endif
 \endverbatim
@@ -201,30 +266,24 @@ std::back_inserter(result));
 
 \param pred             The unary predicate function or function object.
 */
-template <typename UnaryPredicate>
-inline detail::satisfies<UnaryPredicate> satisfies(UnaryPredicate const& pred)
+template <typename UnaryPredicate> inline
+detail::satisfies<UnaryPredicate, false>
+satisfies(UnaryPredicate const& pred)
 {
-    return detail::satisfies<UnaryPredicate>(pred);
+    return detail::satisfies<UnaryPredicate, false>(pred);
 }
 
 /*!
 \brief Generate nearest() predicate.
 
 When nearest predicate is passed to the query, k-nearest neighbour search will be performed.
-
-The simplest way of defining the knn query is passing a \c Point to which \c Values must be closest.
-
-It is possible to define how distance between values and query Point is calculated. This is done by passing PointRelation.
-It can be generated by following functions:
-\li \c boost::geometry::index::to_nearest() - default,
-\li \c boost::geometry::index::to_centroid(),
-\li \c boost::geometry::index::to_furthest().
+\c nearest() predicate takes a \c Point from which distance to \c Values is calculated
+and the maximum number of \c Values that should be returned.
 
 \par Example
 \verbatim
 bgi::query(spatial_index, bgi::nearest(pt, 5), std::back_inserter(result));
 bgi::query(spatial_index, bgi::nearest(pt, 5) && bgi::intersects(box), std::back_inserter(result));
-bgi::query(spatial_index, bgi::nearest(bgi::to_centroid(pt), 5) && bgi::within(box), std::back_inserter(result));
 \endverbatim
 
 \warning
@@ -232,102 +291,64 @@ Only one \c nearest() predicate may be used in a query.
 
 \ingroup predicates
 
-\param point_relation   The point or relation describing how the distance will be calculated.
-\param k                The maximum number of values to return.
+\param point        The point from which distance is calculated.
+\param k            The maximum number of values to return.
 */
-template <typename PointOrRelation> inline
-detail::nearest<PointOrRelation>
-nearest(PointOrRelation const& point_relation, unsigned k)
+template <typename Point> inline
+detail::nearest<Point>
+nearest(Point const& point, unsigned k)
 {
-    return detail::nearest<PointOrRelation>(point_relation, k);
+    return detail::nearest<Point>(point, k);
 }
+
+#ifdef BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
+
+/*!
+\brief Generate path() predicate.
+
+When path predicate is passed to the query, the returned values are k values along the path closest to
+its begin. \c path() predicate takes a \c Segment or a \c Linestring defining the path and the maximum
+number of \c Values that should be returned.
+
+\par Example
+\verbatim
+bgi::query(spatial_index, bgi::path(segment, 5), std::back_inserter(result));
+bgi::query(spatial_index, bgi::path(linestring, 5) && bgi::intersects(box), std::back_inserter(result));
+\endverbatim
+
+\warning
+Only one distance predicate (\c nearest() or \c path()) may be used in a query.
+
+\ingroup predicates
+
+\param linestring   The path along which distance is calculated.
+\param k            The maximum number of values to return.
+*/
+template <typename SegmentOrLinestring> inline
+detail::path<SegmentOrLinestring>
+path(SegmentOrLinestring const& linestring, unsigned k)
+{
+    return detail::path<SegmentOrLinestring>(linestring, k);
+}
+
+#endif // BOOST_GEOMETRY_INDEX_DETAIL_EXPERIMENTAL
 
 namespace detail {
 
 // operator! generators
 
-template <typename Geometry>
-not_covered_by<Geometry>
-operator!(covered_by<Geometry> const& p)
+template <typename Fun, bool Negated> inline
+satisfies<Fun, !Negated>
+operator!(satisfies<Fun, Negated> const& p)
 {
-    return not_covered_by<Geometry>(p.geometry);
+    return satisfies<Fun, !Negated>(p);
 }
 
-template <typename Geometry>
-covered_by<Geometry>
-operator!(not_covered_by<Geometry> const& p)
+template <typename Geometry, typename Tag, bool Negated> inline
+spatial_predicate<Geometry, Tag, !Negated>
+operator!(spatial_predicate<Geometry, Tag, Negated> const& p)
 {
-    return covered_by<Geometry>(p.geometry);
-}
-
-template <typename Geometry>
-not_disjoint<Geometry>
-operator!(disjoint<Geometry> const& p)
-{
-    return not_disjoint<Geometry>(p.geometry);
-}
-
-template <typename Geometry>
-disjoint<Geometry>
-operator!(not_disjoint<Geometry> const& p)
-{
-    return disjoint<Geometry>(p.geometry);
-}
-
-template <typename Geometry>
-not_intersects<Geometry>
-operator!(intersects<Geometry> const& p)
-{
-    return not_intersects<Geometry>(p.geometry);
-}
-
-template <typename Geometry>
-intersects<Geometry>
-operator!(not_intersects<Geometry> const& p)
-{
-    return intersects<Geometry>(p.geometry);
-}
-
-template <typename Geometry>
-not_overlaps<Geometry>
-operator!(overlaps<Geometry> const& p)
-{
-    return not_overlaps<Geometry>(p.geometry);
-}
-
-template <typename Geometry>
-overlaps<Geometry>
-operator!(not_overlaps<Geometry> const& p)
-{
-    return overlaps<Geometry>(p.geometry);
-}
-
-//template <typename Geometry>
-//not_touches<Geometry>
-//operator!(touches<Geometry> const& p)
-//{
-//    return not_touches<Geometry>(p.geometry);
-//}
-//
-//template <typename Geometry>
-//touches<Geometry>
-//operator!(not_touches<Geometry> const& p)
-//{
-//    return touches<Geometry>(p.geometry);
-//}
-
-template <typename Geometry>
-not_within<Geometry>
-operator!(within<Geometry> const& p)
-{
-    return not_within<Geometry>(p.geometry);
-}
-
-template <typename Geometry>
-within<Geometry>
-operator!(not_within<Geometry> const& p)
-{
-    return within<Geometry>(p.geometry);
+    return spatial_predicate<Geometry, Tag, !Negated>(p.geometry);
 }
 
 // operator&& generators

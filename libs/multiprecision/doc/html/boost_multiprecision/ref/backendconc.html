@@ -3,7 +3,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Backend Requirements</title>
 <link rel="stylesheet" href="../../../../../../doc/src/boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.77.1">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../../index.html" title="Chapter&#160;1.&#160;Boost.Multiprecision">
 <link rel="up" href="../ref.html" title="Reference">
 <link rel="prev" href="internals.html" title="Internal Support Code">
@@ -22,7 +22,7 @@
 <div class="spirit-nav">
 <a accesskey="p" href="internals.html"><img src="../../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../ref.html"><img src="../../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="headers.html"><img src="../../../../../../doc/src/images/next.png" alt="Next"></a>
 </div>
-<div class="section boost_multiprecision_ref_backendconc">
+<div class="section">
 <div class="titlepage"><div><div><h3 class="title">
 <a name="boost_multiprecision.ref.backendconc"></a><a class="link" href="backendconc.html" title="Backend Requirements">Backend Requirements</a>
 </h3></div></div></div>
@@ -62,7 +62,9 @@
         <code class="computeroutput"><span class="keyword">int</span></code>, <code class="computeroutput"><span class="identifier">pi</span></code>
         pointer to a variable of type <code class="computeroutput"><span class="keyword">int</span></code>,
         B2 is another type that meets these requirements, b2 is a variable of type
-        B2.
+        B2, <code class="computeroutput"><span class="identifier">ss</span></code> is variable of type
+        <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">streamsize</span></code> and <code class="computeroutput"><span class="identifier">ff</span></code>
+        is a variable of type <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">ios_base</span><span class="special">::</span><span class="identifier">fmtflags</span></code>.
       </p>
 <div class="table">
 <a name="boost_multiprecision.ref.backendconc.compulsory_requirements_on_the_backend_type_"></a><p class="title"><b>Table&#160;1.4.&#160;Compulsory Requirements on the Backend type.</b></p>
@@ -319,15 +321,15 @@
               </td>
 <td>
                 <p>
-                  <code class="computeroutput"><span class="identifier">noexcept</span></code>
+                  <code class="computeroutput"><span class="keyword">noexcept</span></code>
                 </p>
               </td>
 </tr>
 <tr>
 <td>
                 <p>
-                  <code class="computeroutput"><span class="identifier">cb</span><span class="special">.</span><span class="identifier">str</span><span class="special">(</span><span class="identifier">ui</span><span class="special">,</span>
-                  <span class="identifier">bb</span><span class="special">)</span></code>
+                  <code class="computeroutput"><span class="identifier">cb</span><span class="special">.</span><span class="identifier">str</span><span class="special">(</span><span class="identifier">ss</span><span class="special">,</span>
+                  <span class="identifier">ff</span><span class="special">)</span></code>
                 </p>
               </td>
 <td>
@@ -338,10 +340,11 @@
 <td>
                 <p>
                   Returns the string representation of <code class="computeroutput"><span class="identifier">b</span></code>
-                  with <code class="computeroutput"><span class="identifier">ui</span></code> digits
-                  and in scientific format if <code class="computeroutput"><span class="identifier">bb</span></code>
-                  is <code class="computeroutput"><span class="keyword">true</span></code>. If <code class="computeroutput"><span class="identifier">ui</span></code> is zero, then returns as many
-                  digits as are required to reconstruct the original value.
+                  with <code class="computeroutput"><span class="identifier">ss</span></code> digits
+                  and formatted according to the flags set in <code class="computeroutput"><span class="identifier">ff</span></code>.
+                  If <code class="computeroutput"><span class="identifier">ss</span></code> is zero,
+                  then returns as many digits as are required to reconstruct the
+                  original value.
                 </p>
               </td>
 <td>
@@ -396,7 +399,7 @@
               </td>
 <td>
                 <p>
-                  <code class="computeroutput"><span class="identifier">noexcept</span></code>
+                  <code class="computeroutput"><span class="keyword">noexcept</span></code>
                 </p>
               </td>
 </tr>
@@ -1013,7 +1016,7 @@
               </td>
 <td>
                 <p>
-                  <code class="computeroutput"><span class="identifier">noexcept</span></code>
+                  <code class="computeroutput"><span class="keyword">noexcept</span></code>
                 </p>
               </td>
 </tr>
@@ -1039,7 +1042,7 @@
               </td>
 <td>
                 <p>
-                  <code class="computeroutput"><span class="identifier">noexcept</span></code>
+                  <code class="computeroutput"><span class="keyword">noexcept</span></code>
                 </p>
               </td>
 </tr>
@@ -1200,7 +1203,7 @@
               </td>
 <td>
                 <p>
-                  <code class="computeroutput"><span class="identifier">noexcept</span></code>
+                  <code class="computeroutput"><span class="keyword">noexcept</span></code>
                 </p>
               </td>
 </tr>
@@ -1279,7 +1282,7 @@
               </td>
 <td>
                 <p>
-                  <code class="computeroutput"><span class="identifier">noexcept</span></code>
+                  <code class="computeroutput"><span class="keyword">noexcept</span></code>
                 </p>
               </td>
 </tr>
@@ -1356,7 +1359,7 @@
               </td>
 <td>
                 <p>
-                  <code class="computeroutput"><span class="identifier">noexcept</span></code>
+                  <code class="computeroutput"><span class="keyword">noexcept</span></code>
                 </p>
               </td>
 </tr>
@@ -2831,6 +2834,31 @@
 <tr>
 <td>
                 <p>
+                  <code class="computeroutput"><span class="identifier">eval_msb</span><span class="special">(</span><span class="identifier">cb</span><span class="special">)</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="keyword">unsigned</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Returns the index of the most significant bit that is set. Only
+                  required when <code class="computeroutput"><span class="identifier">B</span></code>
+                  is an integer type. The default version of this function is synthesised
+                  from other operations above.
+                </p>
+              </td>
+<td>
+                <p>
+                  &#160;
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
                   <code class="computeroutput"><span class="identifier">eval_bit_test</span><span class="special">(</span><span class="identifier">cb</span><span class="special">,</span>
                   <span class="identifier">ui</span><span class="special">)</span></code>
                 </p>
@@ -3223,6 +3251,32 @@
                   shall be listed in one of the type lists <code class="computeroutput"><span class="identifier">B</span><span class="special">::</span><span class="identifier">signed_types</span></code>,
                   <code class="computeroutput"><span class="identifier">B</span><span class="special">::</span><span class="identifier">unsigned_types</span></code>. The default version
                   of this function is synthesised from other operations above.
+                </p>
+              </td>
+<td>
+                <p>
+                  &#160;
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">eval_integer_sqrt</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">cb</span><span class="special">,</span> <span class="identifier">b2</span><span class="special">)</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="keyword">void</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Sets <code class="computeroutput"><span class="identifier">b</span></code> to the largest
+                  integer which when squared is less than <code class="computeroutput"><span class="identifier">cb</span></code>,
+                  also sets <code class="computeroutput"><span class="identifier">b2</span></code> to
+                  the remainder, ie to <span class="emphasis"><em>cb - b<sup>2</sup></em></span>. The default
+                  version of this function is synthesised from other operations above.
                 </p>
               </td>
 <td>

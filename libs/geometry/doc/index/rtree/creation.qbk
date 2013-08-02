@@ -8,11 +8,11 @@
   http://www.boost.org/LICENSE_1_0.txt)
 =============================================================================/]
 
-[section Creation and modification]
+[section Creation and Modification]
 
-[section Template parameters]
+[h4 Template parameters]
 
-__rtree__ has 5 parameters:
+__rtree__ has 5 parameters but only 2 are required:
 
  rtree<Value,
        Parameters,
@@ -26,9 +26,7 @@ __rtree__ has 5 parameters:
 * `EqualTo` - function object comparing `__value__`s,
 * `Allocator` - `Value`s allocator, all allocators needed by the container are created from it.
 
-[endsect]
-
-[section Values and Indexables]
+[h4 Values and Indexables]
 
 __rtree__ may store `__value__`s of any type as long as passed function objects know how to interpret those `__value__`s, that is
 extract an `__indexable__` that the __rtree__ can handle and compare `__value__`s.
@@ -53,7 +51,7 @@ Examples of default `__value__` types:
 
 The predefined `index::indexable<Value>` returns const reference to the `__indexable__` stored in the `__value__`.
 
-[important The translation is done quite frequently inside the continer - each time the rtree needs it. ]
+[important The translation is done quite frequently inside the container - each time the rtree needs it. ]
 
 The predefined `index::equal_to<Value>`:
 
@@ -63,9 +61,7 @@ The predefined `index::equal_to<Value>`:
 * for `tuple<...>` - compares all components of the `__value__`. If the component is a `Geometry`, `geometry::equals()`
   function is used. For other types it uses `operator==()`.
 
-[endsect]
-
-[section Balancing algorithms (compile-time)]
+[h4 Balancing algorithms compile-time parameters]
 
 `__value__`s may be inserted to the __rtree__ in many various ways. Final internal structure
 of the __rtree__ depends on algorithms used in the insertion process and parameters. The most important is
@@ -73,53 +69,53 @@ nodes' balancing algorithm. Currently, three well-known types of R-trees may be 
 
 Linear - classic __rtree__ using balancing algorithm of linear complexity
 
- index::rtree< __value__, index::linear<16, 4> > rt;
+ index::rtree< __value__, index::linear<16> > rt;
 
 Quadratic - classic __rtree__ using balancing algorithm of quadratic complexity
 
- index::rtree< __value__, index::quadratic<16, 4> > rt;
+ index::rtree< __value__, index::quadratic<16> > rt;
 
 R*-tree - balancing algorithm minimizing nodes' overlap with forced reinsertions
  
- index::rtree< __value__, index::rstar<16, 4> > rt;
+ index::rtree< __value__, index::rstar<16> > rt;
 
-[endsect]
+[h4 Balancing algorithms run-time parameters]
 
-[section Balancing algorithms (run-time)]
-
-Balancing algorithm parameters may be passed to the __rtree__ in run time.
+Balancing algorithm parameters may be passed to the __rtree__ in run-time.
 To use run-time versions of the __rtree__ one may pass parameters which
 names start with `dynamic_`.
 
  // linear
- index::rtree<__value__, index::dynamic_linear> rt(index::dynamic_linear(16, 4));
+ index::rtree<__value__, index::dynamic_linear> rt(index::dynamic_linear(16));
 
  // quadratic
- index::rtree<__value__, index::dynamic_quadratic> rt(index::dynamic_quadratic(16, 4));
+ index::rtree<__value__, index::dynamic_quadratic> rt(index::dynamic_quadratic(16));
 
  // rstar
- index::rtree<__value__, index::dynamic_rstar> rt(index::dynamic_rstar(16, 4));
+ index::rtree<__value__, index::dynamic_rstar> rt(index::dynamic_rstar(16));
 
 The obvious drawback is a slightly slower __rtree__.
 
-[endsect]
+[h4 Non-default parameters]
 
-[section Copying, moving and swapping]
+Non-default R-tree parameters are described in the reference.
+
+[h4 Copying, moving and swapping]
 
 The __rtree__ is copyable and movable container. Move semantics is implemented using Boost.Move library
-which also supports compilers not supporting rvalue references.
+so it's possible to move the container on a compilers without rvalue references support.
 
  // default constructor
- index::rtree< __value__, index::linear<32, 8> > rt1;
+ index::rtree< __value__, index::rstar<8> > rt1;
 
  // copy constructor
- index::rtree< __value__, index::quadratic<16, 4> > rt2(r1);
+ index::rtree< __value__, index::rstar<8> > rt2(r1);
 
  // copy assignment
  rt2 = r1;
 
  // move constructor
- index::rtree< __value__, index::quadratic<8, 3> > rt3(boost::move(rt1));
+ index::rtree< __value__, index::rstar<8> > rt3(boost::move(rt1));
 
  // move assignment
  rt3 = boost::move(rt2);
@@ -127,15 +123,13 @@ which also supports compilers not supporting rvalue references.
  // swap
  rt3.swap(rt2);
 
-[endsect]
-
-[section Inserting and removing Values]
+[h4 Inserting and removing Values]
 
 The following code creates an __rtree__ using quadratic balancing algorithm.
 
  using namespace boost::geometry;
  typedef std::pair<Box, int> __value__;
- index::rtree< __value__, index::quadratic<32, 8> > rt;
+ index::rtree< __value__, index::quadratic<16> > rt;
 
 To insert or remove a `__value__' by method call one may use the following
 code.
@@ -159,16 +153,14 @@ Typically you will perform those operations in a loop in order to e.g. insert
 some number of `__value__`s corresponding to geometrical objects (e.g. `Polygons`)
 stored in another container.
 
-[endsect]
-
-[section Additional interface]
+[h4 Additional interface]
 
 The __rtree__ allows creation, inserting and removing of Values from a range. The range may be passed as
 [first, last) Iterators pair or as a Range.
 
  namespace bgi = boost::geometry::index;
  typedef std::pair<Box, int> __value__;
- typedef bgi::rtree< __value__, bgi::linear<32, 8> > RTree;
+ typedef bgi::rtree< __value__, bgi::linear<32> > RTree;
 
  std::vector<__value__> values;
  /* vector filling code, here */
@@ -202,9 +194,7 @@ The __rtree__ allows creation, inserting and removing of Values from a range. Th
  // remove values with remove(Range)
  rt3.remove(values);
 
-[endsect]
-
-[section Insert iterator]
+[h4 Insert iterator]
 
 There are functions like `std::copy()`, or __rtree__'s queries that copy values to an output iterator.
 In order to insert values to a container in this kind of function insert iterators may be used.
@@ -213,7 +203,7 @@ Geometry.Index provide its own `bgi::insert_iterator<Container>` which is genera
 
  namespace bgi = boost::geometry::index;
  typedef std::pair<Box, int> __value__;
- typedef bgi::rtree< __value__, bgi::linear<32, 8> > RTree;
+ typedef bgi::rtree< __value__, bgi::linear<32> > RTree;
 
  std::vector<__value__> values;
  /* vector filling code, here */
@@ -226,6 +216,4 @@ Geometry.Index provide its own `bgi::insert_iterator<Container>` which is genera
  RTree rt2;
  rt1.spatial_query(Box(/*...*/), bgi::inserter(rt2));
 
-[endsect]
-
-[endsect] [/ Creation and modification /]
+[endsect] [/ Creation and Modification /]

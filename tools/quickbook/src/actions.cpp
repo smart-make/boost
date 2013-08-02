@@ -593,7 +593,7 @@ namespace quickbook
             std::string callout_value;
 
             {
-                template_state state(*this);
+                state_save save(*this, state_save::scope_all);
                 ++template_depth;
 
                 bool r = parse_template(callout_body, *this);
@@ -1217,7 +1217,7 @@ namespace quickbook
             bool r = cl::parse(first, last,
                     content.get_tag() == template_tags::phrase ?
                         state.grammar().inline_phrase :
-                        state.grammar().block
+                        state.grammar().block_start
                 ).full;
 
             boost::swap(state.current_file, saved_current_file);
@@ -1232,23 +1232,17 @@ namespace quickbook
             string_iterator first)
     {
         bool is_block = symbol->content.get_tag() != template_tags::phrase;
+        quickbook::paragraph_action paragraph_action(state);
+
+        // Finish off any existing paragraphs.
+        if (is_block) paragraph_action();
 
         // If this template contains already encoded text, then just
         // write it out, without going through any of the rigamarole.
 
         if (symbol->content.is_encoded())
         {
-            if (is_block)
-            {
-                paragraph_action para(state);
-                para();
-                state.out << symbol->content.get_encoded();
-            }
-            else
-            {
-                state.phrase << symbol->content.get_encoded();
-            }
-
+            (is_block ? state.out : state.phrase) << symbol->content.get_encoded();
             return;
         }
 
@@ -1259,11 +1253,11 @@ namespace quickbook
         // arguments are expanded.
         template_scope const& call_scope = state.templates.top_scope();
 
-        std::string block;
-        std::string phrase;
-
         {
-            template_state save(state);
+            state_save save(state, state_save::scope_callables);
+            std::string save_block;
+            std::string save_phrase;
+
             state.templates.start_template(symbol);
 
             qbk_version_n = symbol->content.get_file()->version();
@@ -1296,6 +1290,11 @@ namespace quickbook
             ///////////////////////////////////
             // parse the template body:
 
+            if (symbol->content.get_file()->version() < 107u) {
+                state.out.swap(save_block);
+                state.phrase.swap(save_phrase);
+            }
+
             if (!parse_template(symbol->content, state))
             {
                 detail::outerr(state.current_file, first)
@@ -1321,19 +1320,24 @@ namespace quickbook
                 return;
             }
 
-            state.out.swap(block);
-            state.phrase.swap(phrase);
-        }
+            if (symbol->content.get_file()->version() < 107u) {
+                state.out.swap(save_block);
+                state.phrase.swap(save_phrase);
 
-        if(is_block || !block.empty()) {
-            paragraph_action para(state);
-            para(); // For paragraphs before the template call.
-            state.out << block;
-            state.phrase << phrase;
-            para();
-        }
-        else {
-            state.phrase << phrase;
+                if(is_block || !save_block.empty()) {
+                    paragraph_action();
+                    state.out << save_block;
+                    state.phrase << save_phrase;
+                    paragraph_action();
+                }
+                else {
+                    state.phrase << save_phrase;
+                }
+            }
+            else
+            {
+                if (is_block) paragraph_action();
+            }
         }
     }
 
@@ -1933,10 +1937,10 @@ namespace quickbook
             //
             // For old versions of quickbook, templates aren't scoped by the
             // file.
-            file_state save(state,
-                load_type == block_tags::import ? file_state::scope_output :
-                qbk_version_n >= 106u ? file_state::scope_callables :
-                file_state::scope_macros);
+            state_save save(state,
+                load_type == block_tags::import ? state_save::scope_output :
+                qbk_version_n >= 106u ? state_save::scope_callables :
+                state_save::scope_macros);
 
             state.current_file = load(paths.filename); // Throws load_error
             state.filename_relative = paths.filename_relative;

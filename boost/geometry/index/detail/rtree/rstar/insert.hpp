@@ -28,7 +28,9 @@ public:
     typedef typename rtree::leaf<Value, typename Options::parameters_type, Box, Allocators, typename Options::node_tag>::type leaf;
 
     typedef typename Options::parameters_type parameters_type;
-    typedef typename Allocators::internal_node_pointer internal_node_pointer;
+
+    //typedef typename Allocators::internal_node_pointer internal_node_pointer;
+    typedef internal_node * internal_node_pointer;
 
     template <typename ResultElements, typename Node>
     static inline void apply(ResultElements & result_elements,
@@ -48,7 +50,7 @@ public:
         elements_type & elements = rtree::elements(n);
 
         const size_t elements_count = parameters.get_max_elements() + 1;
-        const size_t reinserted_elements_count = parameters.get_reinserted_elements();
+        const size_t reinserted_elements_count = (::std::min)(parameters.get_reinserted_elements(), elements_count - parameters.get_min_elements());
 
         BOOST_GEOMETRY_INDEX_ASSERT(parent, "node shouldn't be the root node");
         BOOST_GEOMETRY_INDEX_ASSERT(elements.size() == elements_count, "unexpected elements number");
@@ -93,7 +95,7 @@ public:
             result_elements.push_back(it->second);                                                      // MAY THROW (V, E: copy)
         }
 
-        try
+        BOOST_TRY
         {
             // copy remaining elements to the current node
             elements.clear();
@@ -104,7 +106,7 @@ public:
                 elements.push_back(it->second);                                                         // MAY THROW (V, E: copy)
             }
         }
-        catch(...)
+        BOOST_CATCH(...)
         {
             elements.clear();
 
@@ -114,10 +116,11 @@ public:
                 destroy_element<Value, Options, Translator, Box, Allocators>::apply(it->second, allocators);
             }
 
-            throw;                                                                                      // RETHROW
+            BOOST_RETHROW                                                                                 // RETHROW
         }
+        BOOST_CATCH_END
 
-        BOOST_GEOMETRY_INDEX_DETAIL_USE_PARAM(parameters)
+        ::boost::ignore_unused_variable_warning(parameters);
     }
 
 private:
@@ -285,12 +288,12 @@ struct level_insert
         {
             BOOST_GEOMETRY_INDEX_ASSERT(base::m_level == base::m_traverse_data.current_level, "unexpected level");
 
-            try
+            BOOST_TRY
             {
                 // push new child node
                 rtree::elements(n).push_back(base::m_element);                                              // MAY THROW, STRONG (E: alloc, copy)
             }
-            catch(...)
+            BOOST_CATCH(...)
             {
                 // NOTE: exception-safety
                 // if the insert fails above, the element won't be stored in the tree, so delete it
@@ -298,8 +301,9 @@ struct level_insert
                 rtree::visitors::destroy<Value, Options, Translator, Box, Allocators> del_v(base::m_element.second, base::m_allocators);
                 rtree::apply_visitor(del_v, *base::m_element.second);
 
-                throw;                                                                                      // RETHROW
+                BOOST_RETHROW                                                                                 // RETHROW
             }
+            BOOST_CATCH_END
 
             // first insert
             if ( 0 == InsertIndex )
@@ -464,14 +468,25 @@ public:
     {
         BOOST_GEOMETRY_INDEX_ASSERT(&n == &rtree::get<internal_node>(*m_root), "current node should be the root");
 
-        rstar::level_insert<0, Element, Value, Options, Translator, Box, Allocators> lins_v(
-            m_root, m_leafs_level, m_element, m_parameters, m_translator, m_allocators, m_relative_level);
-
-        rtree::apply_visitor(lins_v, *m_root);                                                              // MAY THROW (V, E: alloc, copy, N: alloc)
-
-        if ( !lins_v.result_elements.empty() )
+        // Distinguish between situation when reinserts are required and use adequate visitor, otherwise use default one
+        if ( m_parameters.get_reinserted_elements() > 0 )
         {
-            recursive_reinsert(lins_v.result_elements, lins_v.result_relative_level);                       // MAY THROW (V, E: alloc, copy, N: alloc)
+            rstar::level_insert<0, Element, Value, Options, Translator, Box, Allocators> lins_v(
+                m_root, m_leafs_level, m_element, m_parameters, m_translator, m_allocators, m_relative_level);
+
+            rtree::apply_visitor(lins_v, *m_root);                                                              // MAY THROW (V, E: alloc, copy, N: alloc)
+
+            if ( !lins_v.result_elements.empty() )
+            {
+                recursive_reinsert(lins_v.result_elements, lins_v.result_relative_level);                       // MAY THROW (V, E: alloc, copy, N: alloc)
+            }
+        }
+        else
+        {
+            visitors::insert<Element, Value, Options, Translator, Box, Allocators, insert_default_tag> ins_v(
+                m_root, m_leafs_level, m_element, m_parameters, m_translator, m_allocators, m_relative_level);
+
+            rtree::apply_visitor(ins_v, *m_root); 
         }
     }
 
@@ -479,13 +494,24 @@ public:
     {
         BOOST_GEOMETRY_INDEX_ASSERT(&n == &rtree::get<leaf>(*m_root), "current node should be the root");
 
-        rstar::level_insert<0, Element, Value, Options, Translator, Box, Allocators> lins_v(
-            m_root, m_leafs_level, m_element, m_parameters, m_translator, m_allocators, m_relative_level);
+        // Distinguish between situation when reinserts are required and use adequate visitor, otherwise use default one
+        if ( m_parameters.get_reinserted_elements() > 0 )
+        {
+            rstar::level_insert<0, Element, Value, Options, Translator, Box, Allocators> lins_v(
+                m_root, m_leafs_level, m_element, m_parameters, m_translator, m_allocators, m_relative_level);
 
-        rtree::apply_visitor(lins_v, *m_root);                                                              // MAY THROW (V, E: alloc, copy, N: alloc)
+            rtree::apply_visitor(lins_v, *m_root);                                                              // MAY THROW (V, E: alloc, copy, N: alloc)
 
-        // we're in the root, so root should be split and there should be no elements to reinsert
-        BOOST_GEOMETRY_INDEX_ASSERT(lins_v.result_elements.empty(), "unexpected state");
+            // we're in the root, so root should be split and there should be no elements to reinsert
+            BOOST_GEOMETRY_INDEX_ASSERT(lins_v.result_elements.empty(), "unexpected state");
+        }
+        else
+        {
+            visitors::insert<Element, Value, Options, Translator, Box, Allocators, insert_default_tag> ins_v(
+                m_root, m_leafs_level, m_element, m_parameters, m_translator, m_allocators, m_relative_level);
+
+            rtree::apply_visitor(ins_v, *m_root); 
+        }
     }
 
 private:
@@ -501,17 +527,18 @@ private:
             rstar::level_insert<1, element_type, Value, Options, Translator, Box, Allocators> lins_v(
                 m_root, m_leafs_level, *it, m_parameters, m_translator, m_allocators, relative_level);
 
-            try
+            BOOST_TRY
             {
                 rtree::apply_visitor(lins_v, *m_root);                                                          // MAY THROW (V, E: alloc, copy, N: alloc)
             }
-            catch(...)
+            BOOST_CATCH(...)
             {
                 ++it;
                 for ( ; it != elements.rend() ; ++it)
                     rtree::destroy_element<Value, Options, Translator, Box, Allocators>::apply(*it, m_allocators);
-                throw;                                                                                          // RETHROW
+                BOOST_RETHROW                                                                                     // RETHROW
             }
+            BOOST_CATCH_END
 
             BOOST_GEOMETRY_INDEX_ASSERT(relative_level + 1 == lins_v.result_relative_level, "unexpected level");
 

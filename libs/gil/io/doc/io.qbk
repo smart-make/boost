@@ -335,10 +335,13 @@ The following table gives an overview of all supported compiler symbols that can
     [[BOOST_GIL_IO_ADD_FS_PATH_SUPPORT]                         [Enable boost::filesystem 3.0 library.]]
     [[BOOST_GIL_IO_PNG_FLOATING_POINT_SUPPORTED]                [Use libpng in floating point mode. This symbol is incompatible with BOOST_GIL_IO_PNG_FIXED_POINT_SUPPORTED.]]
     [[BOOST_GIL_IO_PNG_FIXED_POINT_SUPPORTED]                   [Use libpng in integer mode. This symbol is incompatible with BOOST_GIL_IO_PNG_FLOATING_POINT_SUPPORTED.]]
+    [[BOOST_GIL_IO_PNG_DITHERING_SUPPORTED]                     [Look up "dithering" in libpng manual for explanation.]]
+    [[BOOST_GIL_IO_PNG_1_4_OR_LOWER]                            [Allow compiling with libpng 1.4 or lower.]]
     [[BOOST_GIL_EXTENSION_IO_JPEG_C_LIB_COMPILED_AS_CPLUSPLUS]  [libjpeg is compiled as c++ lib.]]
     [[BOOST_GIL_EXTENSION_IO_PNG_C_LIB_COMPILED_AS_CPLUSPLUS]   [libpng is compiled as c++ lib.]]
     [[BOOST_GIL_EXTENSION_IO_RAW_C_LIB_COMPILED_AS_CPLUSPLUS]   [libraw is compiled as c++ lib.]]
     [[BOOST_GIL_EXTENSION_IO_TIFF_C_LIB_COMPILED_AS_CPLUSPLUS]  [libtiff is compiled as c++ lib.]]
+    [[BOOST_GIL_EXTENSION_IO_ZLIB_C_LIB_COMPILED_AS_CPLUSPLUS]  [zlib is compiled as c++ lib.]]
     [[BOOST_GIL_IO_TEST_ALLOW_READING_IMAGES]                   [Allow basic test images to be read from local hard drive. The paths can be set in paths.hpp]]
     [[BOOST_GIL_IO_TEST_ALLOW_WRITING_IMAGES]                   [Allow images to be written to the local hard drive. The paths can be set in paths.hpp]]
     [[BOOST_GIL_IO_USE_BMP_TEST_SUITE_IMAGES]                   [Run tests using the bmp test images suite. See _BMP_TEST_FILES]]
@@ -368,9 +371,11 @@ The lack of having an indexed image type in gil restricts the current interface 
 write out non-indexed images. This is subject to change soon.
 
 [h3 JPEG]
-For a general overview of the JPEG image file format go to the following _JPEG_Wiki_.
+For a general overview of the JPEG image file format go to the following _JPEG_Wiki_. 
 
-This jpeg extension is based on the libjpeg library which can be found here, _JPEG_Lib_.
+This jpeg extension is based on the libjpeg library which can be found here, _JPEG_Lib_. 
+
+All versions starting from 8x are supported.
 
 The user has to make sure this library is properly installed. I strongly recommend the user
 to build the library yourself. It could potentially save you a lot of trouble.
@@ -388,6 +393,8 @@ This is subject to change soon.
 For a general overview of the PNG image file format go to the following _PNG_Wiki_.
 
 This png extension is based on the libpng, which can be found here, _PNG_Lib.
+
+All versions starting from 1.5.x are supported.
 
 The user has to make sure this library is properly installed. I strongly recommend the user
 to build the library yourself. It could potentially save you a lot of trouble.
@@ -432,6 +439,8 @@ write out non-indexed images. This is subject to change soon.
 For a general overview of the TIFF image file format go to the following _TIFF_Wiki_.
 
 This tiff extension is based on the libtiff, which can be found, _TIFF_Lib_.
+
+All versions starting from 3.9.x are supported.
 
 The user has to make sure this library is properly installed. I strongly recommend the user
 to build the library yourself. It could potentially save you a lot of trouble.

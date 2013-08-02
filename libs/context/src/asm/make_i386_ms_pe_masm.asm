@@ -39,6 +39,13 @@
 ;  --------------------------------------------------------------
 ;  | fc_mxcsr|fc_x87_cw|                                        |
 ;  --------------------------------------------------------------
+;  --------------------------------------------------------------
+;  |   13    |                                                  |
+;  --------------------------------------------------------------
+;  |  034h   |                                                  |
+;  --------------------------------------------------------------
+;  |fc_deallo|                                                  |
+;  --------------------------------------------------------------
 
 .386
 .XMM
@@ -48,7 +55,7 @@ _exit PROTO, value:SDWORD
 
 make_fcontext PROC EXPORT
     mov  eax,         [esp+04h]     ; load 1. arg of make_fcontext, pointer to context stack (base)
-    lea  eax,         [eax-034h]    ; reserve space for fcontext_t at top of context stack
+    lea  eax,         [eax-038h]    ; reserve space for fcontext_t at top of context stack
 
     ; shift address in EAX to lower 16 byte boundary
     ; == pointer to fcontext_t and address of context stack
@@ -61,13 +68,14 @@ make_fcontext PROC EXPORT
     neg  edx                        ; negate stack size for LEA instruction (== substraction)
     lea  ecx,         [ecx+edx]     ; compute bottom address of context stack (limit)
     mov  [eax+020h],  ecx           ; save address of context stack (limit) in fcontext_t
+    mov  [eax+034h],  ecx           ; save address of context stack limit as 'dealloction stack'
     mov  ecx,         [esp+0ch]     ; load 3. arg of make_fcontext, pointer to context function
     mov  [eax+014h],  ecx           ; save address of context function in fcontext_t
 
     stmxcsr [eax+02ch]              ; save MMX control word
     fnstcw  [eax+030h]              ; save x87 control word
 
-    lea  edx,         [eax-01ch]    ; reserve space for last frame and seh on context stack, (ESP - 0x4) % 16 == 0
+    lea  edx,         [eax-024h]    ; reserve space for last frame and seh on context stack, (ESP - 0x4) % 16 == 0
     mov  [eax+010h],  edx           ; save address in EDX as stack pointer for context function
 
     mov  ecx,         finish        ; abs address of finish

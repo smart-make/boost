@@ -13,6 +13,8 @@
 #include "../native.h"
 #include "../compile.h"
 #include "../mem.h"
+#include "../constants.h"
+#include "string.h"
 
 struct ps_map_entry
 {
@@ -156,22 +158,169 @@ LIST * property_set_create( FRAME * frame, int flags )
     }
     else
     {
-        OBJECT * const rulename = object_new( "new" );
-        LIST * val = call_rule( rulename, frame, list_append( list_new( object_new(
-            "property-set" ) ), unique ), 0 );
-        /* The 'unique' variable is freed in 'call_rule'. */
+        OBJECT * rulename = object_new( "new" );
+        OBJECT * varname = object_new( "self.raw" );
+        LIST * val = call_rule( rulename, frame,
+            list_new( object_new( "property-set" ) ), 0 );
+        LISTITER iter, end;
         object_free( rulename );
         pos->value = list_front( val );
-        pos->key = var_get( bindmodule( pos->value ), object_new( "self.raw" ) );
+        var_set( bindmodule( pos->value ), varname, unique, VAR_SET );
+        object_free( varname );
+
+        for ( iter = list_begin( unique ), end = list_end( unique ); iter != end; ++iter )
+        {
+            const char * str = object_str( list_item( iter ) );
+            if ( str[ 0 ] != '<' || ! strchr( str, '>' ) )
+            {
+                string message[ 1 ];
+                string_new( message );
+                string_append( message, "Invalid property: '" );
+                string_append( message, str );
+                string_append( message, "'" );
+                rulename = object_new( "errors.error" );
+                call_rule( rulename, frame,
+                    list_new( object_new( message->value ) ), 0 );
+                /* unreachable */
+                string_free( message );
+                object_free( rulename );
+            }
+        }
+
         return val;
     }
 }
 
+/* binary search for the property value */
+LIST * property_set_get( FRAME * frame, int flags )
+{
+    OBJECT * varname = object_new( "self.raw" );
+    LIST * props = var_get( frame->module, varname );
+    const char * name = object_str( list_front( lol_get( frame->args, 0 ) ) );
+    size_t name_len = strlen( name );
+    LISTITER begin, end;
+    LIST * result = L0;
+    object_free( varname );
+
+    /* Assumes random access */
+    begin = list_begin( props ), end = list_end( props );
+
+    while ( 1 )
+    {
+        ptrdiff_t diff = (end - begin);
+        LISTITER mid = begin + diff / 2;
+        int res;
+        if ( diff == 0 )
+        {
+            return L0;
+        }
+        res = strncmp( object_str( list_item( mid ) ), name, name_len );
+        if ( res < 0 )
+        {
+            begin = mid + 1;
+        }
+        else if ( res > 0 )
+        {
+            end = mid;
+        }
+        else /* We've found the property */
+        {
+            /* Find the beginning of the group */
+            LISTITER tmp = mid;
+            while ( tmp > begin )
+            {
+                --tmp;
+                res = strncmp( object_str( list_item( tmp ) ), name, name_len );
+                if ( res != 0 )
+                {
+                    ++tmp;
+                    break;
+                }
+            }
+            begin = tmp;
+            /* Find the end of the group */
+            tmp = mid + 1;
+            while ( tmp < end )
+            {
+                res = strncmp( object_str( list_item( tmp ) ), name, name_len );
+                if ( res != 0 ) break;
+                ++tmp;
+            }
+            end = tmp;
+            break;
+        }
+    }
+
+    for ( ; begin != end; ++begin )
+    {
+        result = list_push_back( result,
+            object_new( object_str( list_item( begin ) ) + name_len ) );
+    }
+
+    return result;
+}
+
+/* binary search for the property value */
+LIST * property_set_contains_features( FRAME * frame, int flags )
+{
+    OBJECT * varname = object_new( "self.raw" );
+    LIST * props = var_get( frame->module, varname );
+    LIST * features = lol_get( frame->args, 0 );
+    LIST * result = L0;
+    LISTITER features_iter = list_begin( features );
+    LISTITER features_end = list_end( features ) ;
+    object_free( varname );
+
+    for ( ; features_iter != features_end; ++features_iter )
+    {
+        const char * name = object_str( list_item( features_iter ) );
+        size_t name_len = strlen( name );
+        LISTITER begin, end;
+        /* Assumes random access */
+        begin = list_begin( props ), end = list_end( props );
+
+        while ( 1 )
+        {
+            ptrdiff_t diff = (end - begin);
+            LISTITER mid = begin + diff / 2;
+            int res;
+            if ( diff == 0 )
+            {
+                /* The feature is missing */
+                return L0;
+            }
+            res = strncmp( object_str( list_item( mid ) ), name, name_len );
+            if ( res < 0 )
+            {
+                begin = mid + 1;
+            }
+            else if ( res > 0 )
+            {
+                end = mid;
+            }
+            else /* We've found the property */
+            {
+                break;
+            }
+        }
+    }
+    return list_new( object_copy( constant_true ) );
+}
 
 void init_property_set()
 {
-    char const * args[] = { "raw-properties", "*", 0 };
-    declare_native_rule( "property-set", "create", args, property_set_create, 1 );
+    {
+        char const * args[] = { "raw-properties", "*", 0 };
+        declare_native_rule( "property-set", "create", args, property_set_create, 1 );
+    }
+    {
+        char const * args[] = { "feature", 0 };
+        declare_native_rule( "class@property-set", "get", args, property_set_get, 1 );
+    }
+    {
+        char const * args[] = { "features", "*", 0 };
+        declare_native_rule( "class@property-set", "contains-features", args, property_set_contains_features, 1 );
+    }
     ps_map_init( &all_property_sets );
 }
 

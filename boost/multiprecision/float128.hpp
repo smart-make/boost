@@ -6,11 +6,81 @@
 #ifndef BOOST_MP_FLOAT128_HPP
 #define BOOST_MP_FLOAT128_HPP
 
+#include <boost/config.hpp>
+#include <boost/scoped_array.hpp>
+#include <boost/multiprecision/number.hpp>
+
+
+#ifndef BOOST_INTEL
+
 extern "C" {
 #include <quadmath.h>
 }
 
-#include <boost/multiprecision/number.hpp>
+#else
+
+#include <boost/multiprecision/detail/float_string_cvt.hpp>
+
+typedef _Quad __float128;
+
+extern "C" {
+_Quad __ldexpq(_Quad, int);
+_Quad __frexpq(_Quad, int*);
+_Quad __fabsq(_Quad);
+_Quad __floorq(_Quad);
+_Quad __ceilq(_Quad);
+_Quad __sqrtq(_Quad);
+_Quad __truncq(_Quad);
+_Quad __expq(_Quad);
+_Quad __powq(_Quad, _Quad);
+_Quad __logq(_Quad);
+_Quad __log10q(_Quad);
+_Quad __sinq(_Quad);
+_Quad __cosq(_Quad);
+_Quad __tanq(_Quad);
+_Quad __asinq(_Quad);
+_Quad __acosq(_Quad);
+_Quad __atanq(_Quad);
+_Quad __sinhq(_Quad);
+_Quad __coshq(_Quad);
+_Quad __tanhq(_Quad);
+_Quad __fmodq(_Quad, _Quad);
+_Quad __atan2q(_Quad, _Quad);
+
+#define ldexpq __ldexpq
+#define frexpq __frexpq
+#define fabsq __fabsq
+#define floorq __floorq
+#define ceilq __ceilq
+#define sqrtq __sqrtq
+#define truncq __truncq
+#define expq __expq
+#define powq __powq
+#define logq __logq
+#define log10q __log10q
+#define sinq __sinq
+#define cosq __cosq
+#define tanq __tanq
+#define asinq __asinq
+#define acosq __acosq
+#define atanq __atanq
+#define sinhq __sinhq
+#define coshq __coshq
+#define tanhq __tanhq
+#define fmodq __fmodq
+#define atan2q __atan2q
+}
+
+inline _Quad isnanq(_Quad v)
+{
+   return v != v;
+}
+inline _Quad isinfq(_Quad v)
+{
+   return __fabsq(v) > 1.18973149535723176508575932662800702e4932Q;
+}
+
+#endif
 
 namespace boost{
 namespace multiprecision{
@@ -42,15 +112,15 @@ struct float128_backend
 private:
    __float128 m_value;
 public:
-   float128_backend() : m_value(0) {}
-   float128_backend(const float128_backend& o) : m_value(o.m_value) {}
+   BOOST_CONSTEXPR float128_backend() : m_value(0) {}
+   BOOST_CONSTEXPR float128_backend(const float128_backend& o) : m_value(o.m_value) {}
    float128_backend& operator = (const float128_backend& o) 
    {
       m_value = o.m_value;
       return *this;
    }
    template <class T>
-   float128_backend(const T& i, const typename enable_if_c<is_convertible<T, __float128>::value>::type* = 0)
+   BOOST_CONSTEXPR float128_backend(const T& i, const typename enable_if_c<is_convertible<T, __float128>::value>::type* = 0)
       : m_value(i) {}
    template <class T>
    typename enable_if_c<is_arithmetic<T>::value || is_convertible<T, __float128>::value, float128_backend&>::type operator = (const T& i)
@@ -60,12 +130,16 @@ public:
    }
    float128_backend& operator = (const char* s)
    {
+#ifndef BOOST_INTEL
       char* p_end;
       m_value = strtoflt128(s, &p_end);
       if(p_end - s != (std::ptrdiff_t)std::strlen(s))
       {
          BOOST_THROW_EXCEPTION(std::runtime_error("Unable to interpret input string as a floating point value"));
       }
+#else
+      detail::convert_from_string(*this, s);
+#endif
       return *this;
    }
    void swap(float128_backend& o)
@@ -74,7 +148,9 @@ public:
    }
    std::string str(std::streamsize digits, std::ios_base::fmtflags f)const
    {
+#ifndef BOOST_INTEL
       char buf[100];
+      boost::scoped_array<char> buf2;
       std::string format = "%";
       if(f & std::ios_base::showpos)
          format += "+";
@@ -94,8 +170,20 @@ public:
       int v = quadmath_snprintf (buf, 100, format.c_str(), digits, m_value);
 
       if((v < 0) || (v >= 99))
-         BOOST_THROW_EXCEPTION(std::runtime_error("Formatting quad-float value failed."));
+      {
+         int v_max = v;
+         buf2.reset(new char[v+3]);
+         v = quadmath_snprintf (&buf2[0], v_max + 3, format.c_str(), digits, m_value);
+         if(v >= v_max + 3)
+         {
+            BOOST_THROW_EXCEPTION(std::runtime_error("Formatting of __float128 failed."));
+         }
+         return &buf2[0];
+      }
       return buf;
+#else
+      return detail::convert_to_string(*this, digits ? digits : 37, f);
+#endif
    }
    void negate()
    {
@@ -259,7 +347,7 @@ inline void eval_fabs(float128_backend& result, const float128_backend& arg)
 
 inline void eval_trunc(float128_backend& result, const float128_backend& arg)
 {
-   if(isnanq(arg.value()) || isinf(arg.value()))
+   if(isnanq(arg.value()) || isinfq(arg.value()))
    {
       result = boost::math::policies::raise_rounding_error(
             "boost::multiprecision::trunc<%1%>(%1%)", 0, 
@@ -288,6 +376,7 @@ inline void eval_round(float128_backend& result, const float128_backend& arg)
    result.value() = roundq(arg.value());
 }
 */
+
 inline void eval_exp(float128_backend& result, const float128_backend& arg)
 {
    result.value() = expq(arg.value());
@@ -361,21 +450,21 @@ class numeric_limits<boost::multiprecision::number<boost::multiprecision::backen
    typedef boost::multiprecision::number<boost::multiprecision::backends::float128_backend, ExpressionTemplates> number_type;
 public:
    BOOST_STATIC_CONSTEXPR bool is_specialized = true;
-   static number_type (min)() BOOST_NOEXCEPT { return FLT128_MIN; }
-   static number_type (max)() BOOST_NOEXCEPT { return FLT128_MAX; }
+   static number_type (min)() BOOST_NOEXCEPT { return 3.36210314311209350626267781732175260e-4932Q; }
+   static number_type (max)() BOOST_NOEXCEPT { return 1.18973149535723176508575932662800702e4932Q; }
    static number_type lowest() BOOST_NOEXCEPT { return -(max)(); }
-   BOOST_STATIC_CONSTEXPR int digits = FLT128_MANT_DIG;
-   BOOST_STATIC_CONSTEXPR int digits10 = 33;
+   BOOST_STATIC_CONSTEXPR int digits = 113;
+   BOOST_STATIC_CONSTEXPR int digits10 = 34;
    BOOST_STATIC_CONSTEXPR int max_digits10 = 36;
    BOOST_STATIC_CONSTEXPR bool is_signed = true;
    BOOST_STATIC_CONSTEXPR bool is_integer = false;
    BOOST_STATIC_CONSTEXPR bool is_exact = false;
    BOOST_STATIC_CONSTEXPR int radix = 2;
-   static number_type epsilon() { return FLT128_EPSILON; }
+   static number_type epsilon() { return 1.92592994438723585305597794258492732e-34Q; }
    static number_type round_error() { return 0; }
-   BOOST_STATIC_CONSTEXPR int min_exponent = FLT128_MIN_EXP;
+   BOOST_STATIC_CONSTEXPR int min_exponent = -16381;
    BOOST_STATIC_CONSTEXPR int min_exponent10 = min_exponent * 301L / 1000L;
-   BOOST_STATIC_CONSTEXPR int max_exponent = FLT128_MAX_EXP;
+   BOOST_STATIC_CONSTEXPR int max_exponent = 16384;
    BOOST_STATIC_CONSTEXPR int max_exponent10 = max_exponent * 301L / 1000L;
    BOOST_STATIC_CONSTEXPR bool has_infinity = true;
    BOOST_STATIC_CONSTEXPR bool has_quiet_NaN = true;

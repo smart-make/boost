@@ -657,14 +657,6 @@
                 </note>
             </mark-failure>
         </test>
-        <test name="lexical_cast_containers_test">
-            <mark-failure>
-                <toolset name="vacpp*"/>
-                <note author="Antony Polukhin">
-                    This compiler is unable to compile Boost.Container library
-                </note>
-            </mark-failure>
-        </test>
         <test name="lexical_cast_loopback_test">
             <mark-failure>
                 <toolset name="borland-5.6*"/>
@@ -691,7 +683,19 @@
                 <toolset name="cray-8.0"/>
                 <toolset name="acc"/>
                 <note author="Alexander Nasonov">
-                    Conversion double-string-double may give a different value (or even throw) on many compilers
+                    Conversion double-string-double may give a different 
+                    value (or even throw) on many compilers
+                </note>
+            </mark-failure>
+        </test>
+        <test name="lexical_cast_float_types_test">
+            <mark-failure>
+                <toolset name="clang-darwin-11"/>
+                <toolset name="clang-darwin-tot11"/>
+                <toolset name="clang-3.2~c++11_libc++"/>
+                <note author="Antony Polukhin">
+                    libc++ had a bug in implementation of srteam conversions for 
+                    values that shall be represented as infinity. 
                 </note>
             </mark-failure>
         </test>
@@ -707,7 +711,10 @@
                 <toolset name="clang-darwin-libcxx*"/>
                 <toolset name="msvc-9.0~wm5"/>
                 <note author="Antony Polukhin">
-                    Some compilers and STL realizations convert double and long double types with bigger precision loss than minimal (or even round to infinity). Such failures are not a lexical_cast, but a compiler fault. 
+                    Some compilers and STL realizations convert double and long 
+                    double types with bigger precision loss than minimal (or 
+                    even round to infinity). Such failures are not a 
+                    lexical_cast, but a compiler fault. 
                 </note>
             </mark-failure>
         </test>
@@ -723,9 +730,13 @@
         <toolset name="gcc-4.4"/>
         <toolset name="gcc-4.4*"/>
         <toolset name="gcc-mingw-4.4"/>
+        <toolset name="gcc-mingw-4.4*"/>
         <toolset name="gcc-mingw-4.5"/>
+        <toolset name="gcc-mingw-4.5*"/>
         <toolset name="gcc-mingw-4.6"/>
+        <toolset name="gcc-mingw-4.6*"/>
         <toolset name="gcc-mingw-4.7"/>
+        <toolset name="gcc-mingw-4.7*"/>
         <toolset name="msvc-8.0"/>
         <toolset name="pgi-*"/>
         <toolset name="vacpp-*"/>
@@ -2531,6 +2542,30 @@
             </note>
         </mark-expected-failures>
     </library>
+
+	<!-- log -->
+	<library name="log">
+		<mark-unusable>
+			<toolset name="darwin-4.2*"/>
+			<toolset name="gcc-4.2*"/>
+			<note author="Andrey Semashev" date="02 May 2013">
+				These compilers don't support TR1 result_of correctly, which makes them fail
+				to compile Boost.Phoenix-related code of the library.
+			</note>
+		</mark-unusable>
+		<mark-unusable>
+			<toolset name="vacpp-12.1.0.1"/>
+			<note author="Andrey Semashev" date="02 May 2013">
+				The compiler fails to compile Boost.Move and Boost.PropertyTree, which are used by this library.
+			</note>
+		</mark-unusable>
+		<mark-unusable>
+			<toolset name="msvc-9.0~w*"/>
+			<note author="Andrey Semashev" date="02 May 2013">
+				Boost.Filesystem used by Boost.Log does not support Windows Mobile.
+			</note>
+		</mark-unusable>
+	</library>
 
     <!-- logic -->
     <library name="logic">
@@ -5545,6 +5580,21 @@ This platform doesn't supports Boost.Container.
 
     </library>
 
+    <!-- tti -->
+    <library name="tti">
+      <mark-expected-failures>
+        <test name="test_has_mem_data2"/>
+        <test name="test_has_mem_fun_cv_fail2"/>
+        <test name="test_has_mem_fun_cv_fail4"/>
+        <test name="test_has_member "/>
+        <test name="test_has_member_compile"/>
+        <test name="test_has_member_cv "/>
+        <test name="test_has_member_cv_compile "/>
+        <toolset name="vacpp-12.1.0.1"/>
+        <note>These are all failures with Boost.FunctionTypes which TTI uses.</note>
+      </mark-expected-failures>
+    </library>
+  
     <!-- tuple -->
     <library name="tuple">
         <mark-unusable>

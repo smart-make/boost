@@ -25,8 +25,7 @@ struct dynamic_internal_node<Value, Parameters, Box, Allocators, node_d_mem_stat
 
     typedef detail::varray<
         rtree::ptr_pair<Box, typename Allocators::node_pointer>,
-        Parameters::max_elements + 1,
-        elements_allocator_type
+        Parameters::max_elements + 1
     > elements_type;
 
     template <typename Alloc>
@@ -48,8 +47,7 @@ struct dynamic_leaf<Value, Parameters, Box, Allocators, node_d_mem_static_tag>
 
     typedef detail::varray<
         Value,
-        Parameters::max_elements + 1,
-        elements_allocator_type
+        Parameters::max_elements + 1
     > elements_type;
 
     template <typename Alloc>
@@ -88,8 +86,8 @@ struct visitor<Value, Parameters, Box, Allocators, node_d_mem_static_tag, IsVisi
 };
 
 // elements derived type
-template <typename OldValue, size_t N, typename A, typename NewValue>
-struct container_from_elements_type<detail::varray<OldValue, N, A>, NewValue>
+template <typename OldValue, size_t N, typename NewValue>
+struct container_from_elements_type<detail::varray<OldValue, N>, NewValue>
 {
     typedef detail::varray<NewValue, N> type;
 };
@@ -113,16 +111,28 @@ class allocators<Allocator, Value, Parameters, Box, node_d_mem_static_tag>
         >::type
     >::other
 {
+    typedef typename Allocator::template rebind<
+        Value
+    >::other value_allocator_type;
+
 public:
-    typedef typename Allocator::size_type size_type;
+    typedef Allocator allocator_type;
+
+    typedef Value value_type;
+    typedef value_type & reference;
+    typedef const value_type & const_reference;
+    typedef typename value_allocator_type::size_type size_type;
+    typedef typename value_allocator_type::difference_type difference_type;
+    typedef typename value_allocator_type::pointer pointer;
+    typedef typename value_allocator_type::const_pointer const_pointer;
 
     typedef typename Allocator::template rebind<
         typename node<Value, Parameters, Box, allocators, node_d_mem_static_tag>::type
     >::other::pointer node_pointer;
 
-    typedef typename Allocator::template rebind<
-        typename internal_node<Value, Parameters, Box, allocators, node_d_mem_static_tag>::type
-    >::other::pointer internal_node_pointer;
+//    typedef typename Allocator::template rebind<
+//        typename internal_node<Value, Parameters, Box, allocators, node_d_mem_static_tag>::type
+//    >::other::pointer internal_node_pointer;
 
     typedef typename Allocator::template rebind<
         typename internal_node<Value, Parameters, Box, allocators, node_d_mem_static_tag>::type

@@ -4,8 +4,6 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#define BOOST_COROUTINES_SOURCE
-
 #include <boost/coroutine/detail/segmented_stack_allocator.hpp>
 
 #include <boost/assert.hpp>
@@ -62,8 +60,6 @@ segmented_stack_allocator::maximum_stacksize()
 void
 segmented_stack_allocator::allocate( stack_context & ctx, std::size_t size)
 {
-    BOOST_ASSERT( default_stacksize() <= size);
-
     void * limit = __splitstack_makecontext( size, ctx.segments_ctx, & ctx.size);
     BOOST_ASSERT( limit);
     ctx.sp = static_cast< char * >( limit) + ctx.size;

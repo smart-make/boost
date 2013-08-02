@@ -55,11 +55,15 @@
 
 #if defined(TEST_MPF_50)
 template <unsigned N, boost::multiprecision::expression_template_option ET>
-bool is_mpf(const boost::multiprecision::number<boost::multiprecision::gmp_float<N>, ET>&)
+bool has_bad_bankers_rounding(const boost::multiprecision::number<boost::multiprecision::gmp_float<N>, ET>&)
+{  return true;  }
+#endif
+#if defined(TEST_FLOAT128) && defined(BOOST_INTEL)
+bool has_bad_bankers_rounding(const boost::multiprecision::float128&)
 {  return true;  }
 #endif
 template <class T>
-bool is_mpf(const T&) { return false; }
+bool has_bad_bankers_rounding(const T&) { return false; }
 
 bool is_bankers_rounding_error(const std::string& s, const char* expect)
 {
@@ -126,7 +130,7 @@ void test()
             const char* expect = string_data[j][col];
             if(ss.str() != expect)
             {
-               if(is_mpf(mp_t()) && is_bankers_rounding_error(ss.str(), expect))
+               if(has_bad_bankers_rounding(mp_t()) && is_bankers_rounding_error(ss.str(), expect))
                {
                   std::cout << "Ignoring bankers-rounding error with GMP mp_f.\n";
                }
@@ -197,7 +201,7 @@ void test()
       T val = std::numeric_limits<T>::quiet_NaN();
       BOOST_CHECK_EQUAL(val.str(), "nan");
       val = static_cast<T>("nan");
-      BOOST_CHECK(boost::math::isnan(val));
+      BOOST_CHECK((boost::math::isnan)(val));
    }
 }
 
@@ -323,6 +327,9 @@ int main()
 #endif
 #ifdef TEST_FLOAT128
    test<boost::multiprecision::float128>();
+#ifndef BOOST_INTEL
+   test_round_trip<boost::multiprecision::float128>();
+#endif
 #endif
    return boost::report_errors();
 }

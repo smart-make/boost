@@ -21,6 +21,7 @@
 #include <boost/interprocess/detail/os_file_functions.hpp>
 #include <string>
 #include <boost/cstdint.hpp>
+#include <boost/assert.hpp>
 //Some Unixes use caddr_t instead of void * in madvise
 //              SunOS                                 Tru64                               HP-UX                    AIX
 #if defined(sun) || defined(__sun) || defined(__osf__) || defined(__osf) || defined(_hpux) || defined(hpux) || defined(_AIX)
@@ -325,7 +326,7 @@ inline bool mapped_region::priv_shrink_param_check
          m_page_offset = m_page_offset % page_size;
          m_size -= bytes;
          m_base  = static_cast<char *>(m_base) + bytes;
-         assert(shrink_page_bytes%page_size == 0);
+         BOOST_ASSERT(shrink_page_bytes%page_size == 0);
       }
       return true;
    }
@@ -503,7 +504,7 @@ inline bool mapped_region::flush(std::size_t mapping_offset, std::size_t numbyte
    }
    //m_file_or_mapping_hnd can be a file handle or a mapping handle.
    //so flushing file buffers has only sense for files...
-   else if(async && m_file_or_mapping_hnd != winapi::invalid_handle_value &&
+   else if(!async && m_file_or_mapping_hnd != winapi::invalid_handle_value &&
            winapi::get_file_type(m_file_or_mapping_hnd) == winapi::file_type_disk){
       return winapi::flush_file_buffers(m_file_or_mapping_hnd);
    }

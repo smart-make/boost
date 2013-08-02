@@ -18,7 +18,7 @@ The code below assumes that following files are included and namespaces used.
 [rtree_quickstart_include]
 
 Typically you'll store e.g. `std::pair<Box, MyGeometryId>` in the __rtree__. `MyGeometryId`
-will be some indentifier of a complex `Geometry` stored in other container, e.g. index type
+will be some identifier of a complex `Geometry` stored in other container, e.g. index type
 of a `Polygon` stored in the vector or an iterator of list of `Ring`s. To keep it simple to
 define `Value` we will use predefined __box__ and unsigned int.
 
@@ -26,7 +26,7 @@ define `Value` we will use predefined __box__ and unsigned int.
 
 R-tree may be created using various algorithm and parameters. You should choose the algorithm you'll
 find the best for your purpose. In this example we will use quadratic algorithm. Parameters are
-passed as template parameters. Maximum number of elements in nodes are set to 32, minimum to 8. 
+passed as template parameters. Maximum number of elements in nodes is set to 16. 
 
 [rtree_quickstart_create]
 

@@ -20,143 +20,78 @@ namespace boost { namespace geometry { namespace index { namespace detail {
 // predicates
 // ------------------------------------------------------------------ //
 
-//struct empty {};
+template <typename Fun, bool IsFunction>
+struct satisfies_impl
+{
+    satisfies_impl(Fun f) : fun(f) {}
+    Fun * fun;
+};
 
 template <typename Fun>
+struct satisfies_impl<Fun, false>
+{
+    satisfies_impl(Fun const& f) : fun(f) {}
+    Fun fun;
+};
+
+template <typename Fun, bool Negated>
 struct satisfies
+    : satisfies_impl<Fun, ::boost::is_function<Fun>::value>
 {
-    satisfies(Fun const& f) : fun(f) {}
-    Fun const& fun;
+    typedef satisfies_impl<Fun, ::boost::is_function<Fun>::value> base;
+
+    satisfies(Fun const& f) : base(f) {}
+    satisfies(base const& b) : base(b) {}
 };
 
-template <typename Geometry>
-struct covered_by
+// ------------------------------------------------------------------ //
+
+struct contains_tag {};
+struct covered_by_tag {};
+struct covers_tag {};
+struct disjoint_tag {};
+struct intersects_tag {};
+struct overlaps_tag {};
+struct touches_tag {};
+struct within_tag {};
+
+template <typename Geometry, typename Tag, bool Negated>
+struct spatial_predicate
 {
-    covered_by(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
+    spatial_predicate(Geometry const& g) : geometry(g) {}
+    Geometry geometry;
 };
 
-template <typename Geometry>
-struct disjoint
-{
-    disjoint(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
-};
+// ------------------------------------------------------------------ //
 
-template <typename Geometry>
-struct intersects
-{
-    intersects(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
-};
+// TODO
+// may be replaced by
+// nearest_predicate<Geometry>
+//   Geometry geometry
+//   unsigned count
+// + point_tag, path_tag
 
-template <typename Geometry>
-struct overlaps
-{
-    overlaps(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
-};
-
-//template <typename Geometry>
-//struct touches
-//{
-//    touches(Geometry const& g) : geometry(g) {}
-//    Geometry geometry;
-//};
-
-template <typename Geometry>
-struct within
-{
-    within(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
-};
-
-template <typename Geometry>
-struct not_covered_by
-{
-    not_covered_by(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
-};
-
-template <typename Geometry>
-struct not_disjoint
-{
-    not_disjoint(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
-};
-
-template <typename Geometry>
-struct not_intersects
-{
-    not_intersects(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
-};
-
-template <typename Geometry>
-struct not_overlaps
-{
-    not_overlaps(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
-};
-
-//template <typename Geometry>
-//struct not_touches
-//{
-//    not_touches(Geometry const& g) : geometry(g) {}
-//    Geometry geometry;
-//};
-
-template <typename Geometry>
-struct not_within
-{
-    not_within(Geometry const& g) : geometry(g) {}
-    Geometry const& geometry;
-};
-
-template <typename DistancePredicates>
+template <typename PointOrRelation>
 struct nearest
 {
-    nearest(DistancePredicates const& dpred, unsigned k)
-        : distance_predicates(dpred)
+    nearest(PointOrRelation const& por, unsigned k)
+        : point_or_relation(por)
         , count(k)
     {}
-    DistancePredicates const& distance_predicates;
+    PointOrRelation point_or_relation;
     unsigned count;
 };
 
-// ------------------------------------------------------------------ //
-// is_predicate
-// ------------------------------------------------------------------ //
-
-//template <typename P> struct is_predicate { static const bool value = false; };
-////template <> struct is_predicate< empty > { static const bool value = true; };
-//template <typename UP> struct is_predicate< satisfies<UP> > { static const bool value = true; };
-//template <typename G> struct is_predicate< covered_by<G> > { static const bool value = true; };
-//template <typename G> struct is_predicate< disjoint<G> > { static const bool value = true; };
-//template <typename G> struct is_predicate< intersects<G> > { static const bool value = true; };
-//template <typename G> struct is_predicate< overlaps<G> > { static const bool value = true; };
-////template <typename G> struct is_predicate< touches<G> > { static const bool value = true; };
-//template <typename G> struct is_predicate< within<G> > { static const bool value = true; };
-//template <typename G> struct is_predicate< not_covered_by<G> > { static const bool value = true; };
-//template <typename G> struct is_predicate< not_disjoint<G> > { static const bool value = true; };
-//template <typename G> struct is_predicate< not_intersects<G> > { static const bool value = true; };
-//template <typename G> struct is_predicate< not_overlaps<G> > { static const bool value = true; };
-////template <typename G> struct is_predicate< not_touches<G> > { static const bool value = true; };
-//template <typename G> struct is_predicate< not_within<G> > { static const bool value = true; };
-//template <typename P> struct is_predicate< nearest<P> > { static const bool value = true; };
-
-// ------------------------------------------------------------------ //
-// predicate_check_default
-// ------------------------------------------------------------------ //
-
-//template <typename GeometryOrUnary, typename GeometryTag, typename Tag>
-//struct predicate_check_default
-//{
-//    BOOST_MPL_ASSERT_MSG(
-//        (false),
-//        NOT_IMPLEMENTED_FOR_THESE_TAGS,
-//        (predicate_check_default));
-//};
+template <typename SegmentOrLinestring>
+struct path
+{
+    path(SegmentOrLinestring const& g, unsigned k)
+        : geometry(g)
+        , count(k)
+    {}
+    SegmentOrLinestring geometry;
+    unsigned count;
+};
 
 // ------------------------------------------------------------------ //
 // predicate_check
@@ -172,184 +107,144 @@ struct predicate_check
 };
 
 // ------------------------------------------------------------------ //
-// predicate_check_default for value
-// ------------------------------------------------------------------ //
-
-//template <typename Geometry, typename GeometryTag>
-//struct predicate_check_default<Geometry, GeometryTag, value_tag>
-//{
-//    template <typename Value, typename Indexable>
-//    static inline bool apply(Geometry const& g, Value const&, Indexable const& i)
-//    {
-//        return geometry::intersects(i, g);
-//    }
-//};
-//
-//template <typename Unary>
-//struct predicate_check_default<Unary, void, value_tag>
-//{
-//    template <typename Value, typename Indexable>
-//    static inline bool apply(Unary const& u, Value const& v, Indexable const&)
-//    {
-//        return u(v);
-//    }
-//};
-
-// ------------------------------------------------------------------ //
-// predicate_check for value
-// ------------------------------------------------------------------ //
-
-//template <typename GeometryOrUnary>
-//struct predicate_check<GeometryOrUnary, value_tag>
-//{
-//    template <typename Value, typename Indexable>
-//    static inline bool apply(GeometryOrUnary const& g, Value const& v, Indexable const& i)
-//    {
-//        return predicate_check_default<
-//            GeometryOrUnary, typename geometry::traits::tag<GeometryOrUnary>::type, bounds_tag
-//        >::apply(g, v, i);
-//    }
-//};
-
-//template <>
-//struct predicate_check<empty, value_tag>
-//{
-//    template <typename Value, typename Indexable>
-//    static inline bool apply(empty const&, Value const&, Indexable const&)
-//    {
-//        return true;
-//    }
-//};
 
 template <typename Fun>
-struct predicate_check<satisfies<Fun>, value_tag>
+struct predicate_check<satisfies<Fun, false>, value_tag>
 {
     template <typename Value, typename Indexable>
-    static inline bool apply(satisfies<Fun> const& p, Value const& v, Indexable const&)
+    static inline bool apply(satisfies<Fun, false> const& p, Value const& v, Indexable const&)
     {
         return p.fun(v);
     }
 };
 
-template <typename Geometry>
-struct predicate_check<covered_by<Geometry>, value_tag>
+template <typename Fun>
+struct predicate_check<satisfies<Fun, true>, value_tag>
 {
     template <typename Value, typename Indexable>
-    static inline bool apply(covered_by<Geometry> const& p, Value const&, Indexable const& i)
+    static inline bool apply(satisfies<Fun, true> const& p, Value const& v, Indexable const&)
     {
-        return geometry::covered_by(i, p.geometry);
+        return !p.fun(v);
     }
 };
 
-template <typename Geometry>
-struct predicate_check<disjoint<Geometry>, value_tag>
+// ------------------------------------------------------------------ //
+
+template <typename Tag>
+struct spatial_predicate_call
 {
-    template <typename Value, typename Indexable>
-    static inline bool apply(disjoint<Geometry> const& p, Value const&, Indexable const& i)
+    BOOST_MPL_ASSERT_MSG(false, NOT_IMPLEMENTED_FOR_THIS_TAG, (Tag));
+};
+
+template <>
+struct spatial_predicate_call<contains_tag>
+{
+    template <typename G1, typename G2>
+    static inline bool apply(G1 const& g1, G2 const& g2)
     {
-        return geometry::disjoint(i, p.geometry);
+        return geometry::within(g2, g1);
     }
 };
 
-template <typename Geometry>
-struct predicate_check<intersects<Geometry>, value_tag>
+template <>
+struct spatial_predicate_call<covered_by_tag>
 {
-    template <typename Value, typename Indexable>
-    static inline bool apply(intersects<Geometry> const& p, Value const&, Indexable const& i)
+    template <typename G1, typename G2>
+    static inline bool apply(G1 const& g1, G2 const& g2)
     {
-        return geometry::intersects(i, p.geometry);
+        return geometry::covered_by(g1, g2);
     }
 };
 
-template <typename Geometry>
-struct predicate_check<overlaps<Geometry>, value_tag>
+template <>
+struct spatial_predicate_call<covers_tag>
 {
-    template <typename Value, typename Indexable>
-    static inline bool apply(overlaps<Geometry> const& p, Value const&, Indexable const& i)
+    template <typename G1, typename G2>
+    static inline bool apply(G1 const& g1, G2 const& g2)
     {
-        return geometry::overlaps(i, p.geometry);
+        return geometry::covered_by(g2, g1);
     }
 };
 
-//template <typename Geometry>
-//struct predicate_check<touches<Geometry>, value_tag>
-//{
-//    template <typename Value, typename Indexable>
-//    static inline bool apply(touches<Geometry> const& p, Value const&, Indexable const& i)
-//    {
-//        return geometry::touches(i, p.geometry);
-//    }
-//};
-
-template <typename Geometry>
-struct predicate_check<within<Geometry>, value_tag>
+template <>
+struct spatial_predicate_call<disjoint_tag>
 {
-    template <typename Value, typename Indexable>
-    static inline bool apply(within<Geometry> const& p, Value const&, Indexable const& i)
+    template <typename G1, typename G2>
+    static inline bool apply(G1 const& g1, G2 const& g2)
     {
-        return geometry::within(i, p.geometry);
+        return geometry::disjoint(g1, g2);
     }
 };
 
-template <typename Geometry>
-struct predicate_check<not_covered_by<Geometry>, value_tag>
+template <>
+struct spatial_predicate_call<intersects_tag>
 {
-    template <typename Value, typename Indexable>
-    static inline bool apply(not_covered_by<Geometry> const& p, Value const&, Indexable const& i)
+    template <typename G1, typename G2>
+    static inline bool apply(G1 const& g1, G2 const& g2)
     {
-        return !geometry::covered_by(i, p.geometry);
+        return geometry::intersects(g1, g2);
     }
 };
 
-template <typename Geometry>
-struct predicate_check<not_disjoint<Geometry>, value_tag>
+template <>
+struct spatial_predicate_call<overlaps_tag>
 {
-    template <typename Value, typename Indexable>
-    static inline bool apply(not_disjoint<Geometry> const& p, Value const&, Indexable const& i)
+    template <typename G1, typename G2>
+    static inline bool apply(G1 const& g1, G2 const& g2)
     {
-        return !geometry::disjoint(i, p.geometry);
+        return geometry::overlaps(g1, g2);
     }
 };
 
-template <typename Geometry>
-struct predicate_check<not_intersects<Geometry>, value_tag>
+template <>
+struct spatial_predicate_call<touches_tag>
 {
-    template <typename Value, typename Indexable>
-    static inline bool apply(not_intersects<Geometry> const& p, Value const&, Indexable const& i)
+    template <typename G1, typename G2>
+    static inline bool apply(G1 const& g1, G2 const& g2)
     {
-        return !geometry::intersects(i, p.geometry);
+        return geometry::touches(g1, g2);
     }
 };
 
-template <typename Geometry>
-struct predicate_check<not_overlaps<Geometry>, value_tag>
+template <>
+struct spatial_predicate_call<within_tag>
 {
-    template <typename Value, typename Indexable>
-    static inline bool apply(not_overlaps<Geometry> const& p, Value const&, Indexable const& i)
+    template <typename G1, typename G2>
+    static inline bool apply(G1 const& g1, G2 const& g2)
     {
-        return !geometry::overlaps(i, p.geometry);
+        return geometry::within(g1, g2);
     }
 };
 
-//template <typename Geometry>
-//struct predicate_check<not_touches<Geometry>, value_tag>
-//{
-//    template <typename Value, typename Indexable>
-//    static inline bool apply(not_touches<Geometry> const& p, Value const&, Indexable const& i)
-//    {
-//        return !geometry::touches(i, p.geometry);
-//    }
-//};
+// ------------------------------------------------------------------ //
 
-template <typename Geometry>
-struct predicate_check<not_within<Geometry>, value_tag>
+// spatial predicate
+template <typename Geometry, typename Tag>
+struct predicate_check<spatial_predicate<Geometry, Tag, false>, value_tag>
 {
+    typedef spatial_predicate<Geometry, Tag, false> Pred;
+
     template <typename Value, typename Indexable>
-    static inline bool apply(not_within<Geometry> const& p, Value const&, Indexable const& i)
+    static inline bool apply(Pred const& p, Value const&, Indexable const& i)
     {
-        return !geometry::within(i, p.geometry);
+        return spatial_predicate_call<Tag>::apply(i, p.geometry);
     }
 };
+
+// negated spatial predicate
+template <typename Geometry, typename Tag>
+struct predicate_check<spatial_predicate<Geometry, Tag, true>, value_tag>
+{
+    typedef spatial_predicate<Geometry, Tag, true> Pred;
+
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& p, Value const&, Indexable const& i)
+    {
+        return !spatial_predicate_call<Tag>::apply(i, p.geometry);
+    }
+};
+
+// ------------------------------------------------------------------ //
 
 template <typename DistancePredicates>
 struct predicate_check<nearest<DistancePredicates>, value_tag>
@@ -361,195 +256,203 @@ struct predicate_check<nearest<DistancePredicates>, value_tag>
     }
 };
 
-// ------------------------------------------------------------------ //
-// predicate_check_default for bounds
-// ------------------------------------------------------------------ //
-
-//template <typename Geometry, typename GeometryTag>
-//struct predicate_check_default<Geometry, GeometryTag, bounds_tag>
-//{
-//    template <typename Value, typename Indexable>
-//    static inline bool apply(Geometry const& g, Value const&, Indexable const& i)
-//    {
-//        return geometry::intersects(i, g);
-//    }
-//};
-//
-//template <typename Unary>
-//struct predicate_check_default<Unary, void, bounds_tag>
-//{
-//    template <typename Value, typename Indexable>
-//    static inline bool apply(Unary const&, Value const&, Indexable const&)
-//    {
-//        return true;
-//    }
-//};
-
-// ------------------------------------------------------------------ //
-// predicates_chec for bounds
-// ------------------------------------------------------------------ //
-
-//template <typename GeometryOrUnary>
-//struct predicate_check<GeometryOrUnary, bounds_tag>
-//{
-//    template <typename Value, typename Indexable>
-//    static inline bool apply(GeometryOrUnary const& g, Value const& v, Indexable const& i)
-//    {
-//        return predicate_check_default<
-//            GeometryOrUnary, typename geometry::traits::tag<GeometryOrUnary>::type, bounds_tag
-//        >::apply(g, v, i);
-//    }
-//};
-
-//template <>
-//struct predicate_check<empty, bounds_tag>
-//{
-//    template <typename Geometry, typename Value, typename Indexable>
-//    static inline bool apply(Geometry const&, Value const&, Indexable const&)
-//    {
-//        return true;
-//    }
-//};
-
-template <typename Fun>
-struct predicate_check<satisfies<Fun>, bounds_tag>
+template <typename Linestring>
+struct predicate_check<path<Linestring>, value_tag>
 {
     template <typename Value, typename Box>
-    static bool apply(satisfies<Fun> const&, Value const&, Box const&)
+    static inline bool apply(path<Linestring> const&, Value const&, Box const&)
     {
         return true;
     }
 };
 
-template <typename Geometry>
-struct predicate_check<covered_by<Geometry>, bounds_tag>
+// ------------------------------------------------------------------ //
+// predicates_check for bounds
+// ------------------------------------------------------------------ //
+
+template <typename Fun, bool Negated>
+struct predicate_check<satisfies<Fun, Negated>, bounds_tag>
 {
     template <typename Value, typename Box>
-    static bool apply(covered_by<Geometry> const& p, Value const&, Box const& i)
+    static bool apply(satisfies<Fun, Negated> const&, Value const&, Box const&)
     {
-        return geometry::intersects(i, p.geometry);
+        return true;
     }
 };
 
-template <typename Geometry>
-struct predicate_check<disjoint<Geometry>, bounds_tag>
-{
-    template <typename Value, typename Box>
-    static bool apply(disjoint<Geometry> const& p, Value const&, Box const& i)
-    {
-        return !geometry::covered_by(i, p.geometry);
-    }
-};
+// ------------------------------------------------------------------ //
 
-template <typename Geometry>
-struct predicate_check<intersects<Geometry>, bounds_tag>
+// NOT NEGATED
+// value_tag        bounds_tag
+// ---------------------------
+// contains(I,G)    contains(I,G)
+// covered_by(I,G)  intersects(I,G)
+// covers(I,G)      covers(I,G)
+// disjoint(I,G)    !covered_by(I,G)
+// intersects(I,G)  intersects(I,G)
+// overlaps(I,G)    intersects(I,G)  - possibly change to the version without border case, e.g. intersects_without_border(0,0x1,1, 1,1x2,2) should give false
+// touches(I,G)     intersects(I,G)
+// within(I,G)      intersects(I,G)  - possibly change to the version without border case, e.g. intersects_without_border(0,0x1,1, 1,1x2,2) should give false
+
+// spatial predicate - default
+template <typename Geometry, typename Tag>
+struct predicate_check<spatial_predicate<Geometry, Tag, false>, bounds_tag>
 {
+    typedef spatial_predicate<Geometry, Tag, false> Pred;
+
     template <typename Value, typename Indexable>
-    static inline bool apply(intersects<Geometry> const& p, Value const&, Indexable const& i)
+    static inline bool apply(Pred const& p, Value const&, Indexable const& i)
     {
-        return geometry::intersects(i, p.geometry);
+        return spatial_predicate_call<intersects_tag>::apply(i, p.geometry);
     }
 };
 
+// spatial predicate - contains
 template <typename Geometry>
-struct predicate_check<overlaps<Geometry>, bounds_tag>
+struct predicate_check<spatial_predicate<Geometry, contains_tag, false>, bounds_tag>
 {
-    template <typename Value, typename Box>
-    static inline bool apply(overlaps<Geometry> const& p, Value const&, Box const& i)
+    typedef spatial_predicate<Geometry, contains_tag, false> Pred;
+
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& p, Value const&, Indexable const& i)
     {
-        // TODO: awulkiew - possibly change to the version without border case
-        // e.g. intersects_without_border(0,0x1,1, 1,1x2,2) should give false
-        return geometry::intersects(i, p.geometry);
+        return spatial_predicate_call<contains_tag>::apply(i, p.geometry);
     }
 };
 
-//template <typename Geometry>
-//struct predicate_check<touches<Geometry>, bounds_tag>
-//{
-//    template <typename Value, typename Box>
-//    static bool apply(touches<Geometry> const& p, Value const&, Box const& i)
-//    {
-//        return geometry::intersects(i, p.geometry);
-//    }
-//};
-
+// spatial predicate - covers
 template <typename Geometry>
-struct predicate_check<within<Geometry>, bounds_tag>
+struct predicate_check<spatial_predicate<Geometry, covers_tag, false>, bounds_tag>
 {
-    template <typename Value, typename Box>
-    static bool apply(within<Geometry> const& p, Value const&, Box const& i)
+    typedef spatial_predicate<Geometry, covers_tag, false> Pred;
+
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& p, Value const&, Indexable const& i)
     {
-        // TODO: awulkiew - possibly change to the version without border case
-        // e.g. intersects_without_border(0,0x1,1, 1,1x2,2) should give false
-        return geometry::intersects(i, p.geometry);
+        return spatial_predicate_call<covers_tag>::apply(i, p.geometry);
     }
 };
 
+// spatial predicate - disjoint
 template <typename Geometry>
-struct predicate_check<not_covered_by<Geometry>, bounds_tag>
+struct predicate_check<spatial_predicate<Geometry, disjoint_tag, false>, bounds_tag>
 {
-    template <typename Value, typename Box>
-    static bool apply(not_covered_by<Geometry> const& p, Value const&, Box const& i)
+    typedef spatial_predicate<Geometry, disjoint_tag, false> Pred;
+
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& p, Value const&, Indexable const& i)
     {
-        return !geometry::covered_by(i, p.geometry);
+        return !spatial_predicate_call<covered_by_tag>::apply(i, p.geometry);
     }
 };
 
-template <typename Geometry>
-struct predicate_check<not_disjoint<Geometry>, bounds_tag>
+// NEGATED
+// value_tag        bounds_tag
+// ---------------------------
+// !contains(I,G)   TRUE
+// !covered_by(I,G) !covered_by(I,G)
+// !covers(I,G)     TRUE
+// !disjoint(I,G)   !disjoint(I,G)
+// !intersects(I,G) !covered_by(I,G)
+// !overlaps(I,G)   TRUE
+// !touches(I,G)    !intersects(I,G)
+// !within(I,G)     !within(I,G)
+
+// negated spatial predicate - default
+template <typename Geometry, typename Tag>
+struct predicate_check<spatial_predicate<Geometry, Tag, true>, bounds_tag>
 {
-    template <typename Value, typename Box>
-    static bool apply(not_disjoint<Geometry> const& p, Value const&, Box const& i)
+    typedef spatial_predicate<Geometry, Tag, true> Pred;
+
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& p, Value const&, Indexable const& i)
     {
-        return !geometry::disjoint(i, p.geometry);
+        return !spatial_predicate_call<Tag>::apply(i, p.geometry);
     }
 };
 
+// negated spatial predicate - contains
 template <typename Geometry>
-struct predicate_check<not_intersects<Geometry>, bounds_tag>
+struct predicate_check<spatial_predicate<Geometry, contains_tag, true>, bounds_tag>
 {
-    template <typename Value, typename Box>
-    static bool apply(not_intersects<Geometry> const& p, Value const&, Box const& i)
-    {
-        return !geometry::covered_by(i, p.geometry);
-    }
-};
+    typedef spatial_predicate<Geometry, contains_tag, true> Pred;
 
-template <typename Geometry>
-struct predicate_check<not_overlaps<Geometry>, bounds_tag>
-{
-    template <typename Value, typename Box>
-    static bool apply(not_overlaps<Geometry> const& , Value const&, Box const& )
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& , Value const&, Indexable const& )
     {
         return true;
     }
 };
 
-//template <typename Geometry>
-//struct predicate_check<not_touches<Geometry>, bounds_tag>
-//{
-//    template <typename Value, typename Box>
-//    static bool apply(not_touches<Geometry> const& p, Value const&, Box const& i)
-//    {
-//        return !geometry::intersects(i, p.geometry);
-//    }
-//};
-
+// negated spatial predicate - covers
 template <typename Geometry>
-struct predicate_check<not_within<Geometry>, bounds_tag>
+struct predicate_check<spatial_predicate<Geometry, covers_tag, true>, bounds_tag>
 {
-    template <typename Value, typename Box>
-    static bool apply(not_within<Geometry> const& p, Value const&, Box const& i)
+    typedef spatial_predicate<Geometry, covers_tag, true> Pred;
+
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& , Value const&, Indexable const& )
     {
-        return !geometry::within(i, p.geometry);
+        return true;
     }
 };
+
+// negated spatial predicate - intersects
+template <typename Geometry>
+struct predicate_check<spatial_predicate<Geometry, intersects_tag, true>, bounds_tag>
+{
+    typedef spatial_predicate<Geometry, intersects_tag, true> Pred;
+
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& p, Value const&, Indexable const& i)
+    {
+        return !spatial_predicate_call<covered_by_tag>::apply(i, p.geometry);
+    }
+};
+
+// negated spatial predicate - overlaps
+template <typename Geometry>
+struct predicate_check<spatial_predicate<Geometry, overlaps_tag, true>, bounds_tag>
+{
+    typedef spatial_predicate<Geometry, overlaps_tag, true> Pred;
+
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& , Value const&, Indexable const& )
+    {
+        return true;
+    }
+};
+
+// negated spatial predicate - touches
+template <typename Geometry>
+struct predicate_check<spatial_predicate<Geometry, touches_tag, true>, bounds_tag>
+{
+    typedef spatial_predicate<Geometry, touches_tag, true> Pred;
+
+    template <typename Value, typename Indexable>
+    static inline bool apply(Pred const& p, Value const&, Indexable const& i)
+    {
+        return !spatial_predicate_call<intersects_tag>::apply(i, p.geometry);
+    }
+};
+
+// ------------------------------------------------------------------ //
 
 template <typename DistancePredicates>
 struct predicate_check<nearest<DistancePredicates>, bounds_tag>
 {
     template <typename Value, typename Box>
     static inline bool apply(nearest<DistancePredicates> const&, Value const&, Box const&)
+    {
+        return true;
+    }
+};
+
+template <typename Linestring>
+struct predicate_check<path<Linestring>, bounds_tag>
+{
+    template <typename Value, typename Box>
+    static inline bool apply(path<Linestring> const&, Value const&, Box const&)
     {
         return true;
     }
@@ -789,13 +692,19 @@ inline bool predicates_check(Predicates const& p, Value const& v, Indexable cons
 // predicates_is_nearest
 
 template <typename P>
-struct predicates_is_nearest
+struct predicates_is_distance
 {
     static const unsigned value = 0;
 };
 
 template <typename DistancePredicates>
-struct predicates_is_nearest< nearest<DistancePredicates> >
+struct predicates_is_distance< nearest<DistancePredicates> >
+{
+    static const unsigned value = 1;
+};
+
+template <typename Linestring>
+struct predicates_is_distance< path<Linestring> >
 {
     static const unsigned value = 1;
 };
@@ -803,46 +712,46 @@ struct predicates_is_nearest< nearest<DistancePredicates> >
 // predicates_count_nearest
 
 template <typename T>
-struct predicates_count_nearest
+struct predicates_count_distance
 {
-    static const unsigned value = predicates_is_nearest<T>::value;
+    static const unsigned value = predicates_is_distance<T>::value;
 };
 
 //template <typename F, typename S>
-//struct predicates_count_nearest< std::pair<F, S> >
+//struct predicates_count_distance< std::pair<F, S> >
 //{
-//    static const unsigned value = predicates_is_nearest<F>::value
-//                                + predicates_is_nearest<S>::value;
+//    static const unsigned value = predicates_is_distance<F>::value
+//                                + predicates_is_distance<S>::value;
 //};
 
 template <typename Tuple, unsigned N>
-struct predicates_count_nearest_tuple
+struct predicates_count_distance_tuple
 {
     static const unsigned value =
-        predicates_is_nearest<typename boost::tuples::element<N-1, Tuple>::type>::value
-        + predicates_count_nearest_tuple<Tuple, N-1>::value;
+        predicates_is_distance<typename boost::tuples::element<N-1, Tuple>::type>::value
+        + predicates_count_distance_tuple<Tuple, N-1>::value;
 };
 
 template <typename Tuple>
-struct predicates_count_nearest_tuple<Tuple, 1>
+struct predicates_count_distance_tuple<Tuple, 1>
 {
     static const unsigned value =
-        predicates_is_nearest<typename boost::tuples::element<0, Tuple>::type>::value;
+        predicates_is_distance<typename boost::tuples::element<0, Tuple>::type>::value;
 };
 
 //template <typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-//struct predicates_count_nearest< boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> >
+//struct predicates_count_distance< boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> >
 //{
-//    static const unsigned value = predicates_count_nearest_tuple<
+//    static const unsigned value = predicates_count_distance_tuple<
 //        boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>,
 //        boost::tuples::length< boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> >::value
 //    >::value;
 //};
 
 template <typename Head, typename Tail>
-struct predicates_count_nearest< boost::tuples::cons<Head, Tail> >
+struct predicates_count_distance< boost::tuples::cons<Head, Tail> >
 {
-    static const unsigned value = predicates_count_nearest_tuple<
+    static const unsigned value = predicates_count_distance_tuple<
         boost::tuples::cons<Head, Tail>,
         boost::tuples::length< boost::tuples::cons<Head, Tail> >::value
     >::value;
@@ -851,50 +760,50 @@ struct predicates_count_nearest< boost::tuples::cons<Head, Tail> >
 // predicates_find_nearest
 
 template <typename T>
-struct predicates_find_nearest
+struct predicates_find_distance
 {
-    static const unsigned value = predicates_is_nearest<T>::value ? 0 : 1;
+    static const unsigned value = predicates_is_distance<T>::value ? 0 : 1;
 };
 
 //template <typename F, typename S>
-//struct predicates_find_nearest< std::pair<F, S> >
+//struct predicates_find_distance< std::pair<F, S> >
 //{
-//    static const unsigned value = predicates_is_nearest<F>::value ? 0 :
-//                                    (predicates_is_nearest<S>::value ? 1 : 2);
+//    static const unsigned value = predicates_is_distance<F>::value ? 0 :
+//                                    (predicates_is_distance<S>::value ? 1 : 2);
 //};
 
 template <typename Tuple, unsigned N>
-struct predicates_find_nearest_tuple
+struct predicates_find_distance_tuple
 {
-    static const bool is_found = predicates_find_nearest_tuple<Tuple, N-1>::is_found
-                                || predicates_is_nearest<typename boost::tuples::element<N-1, Tuple>::type>::value;
+    static const bool is_found = predicates_find_distance_tuple<Tuple, N-1>::is_found
+                                || predicates_is_distance<typename boost::tuples::element<N-1, Tuple>::type>::value;
 
-    static const unsigned value = predicates_find_nearest_tuple<Tuple, N-1>::is_found ?
-        predicates_find_nearest_tuple<Tuple, N-1>::value :
-        (predicates_is_nearest<typename boost::tuples::element<N-1, Tuple>::type>::value ?
+    static const unsigned value = predicates_find_distance_tuple<Tuple, N-1>::is_found ?
+        predicates_find_distance_tuple<Tuple, N-1>::value :
+        (predicates_is_distance<typename boost::tuples::element<N-1, Tuple>::type>::value ?
             N-1 : boost::tuples::length<Tuple>::value);
 };
 
 template <typename Tuple>
-struct predicates_find_nearest_tuple<Tuple, 1>
+struct predicates_find_distance_tuple<Tuple, 1>
 {
-    static const bool is_found = predicates_is_nearest<typename boost::tuples::element<0, Tuple>::type>::value;
+    static const bool is_found = predicates_is_distance<typename boost::tuples::element<0, Tuple>::type>::value;
     static const unsigned value = is_found ? 0 : boost::tuples::length<Tuple>::value;
 };
 
 //template <typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-//struct predicates_find_nearest< boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> >
+//struct predicates_find_distance< boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> >
 //{
-//    static const unsigned value = predicates_find_nearest_tuple<
+//    static const unsigned value = predicates_find_distance_tuple<
 //        boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>,
 //        boost::tuples::length< boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> >::value
 //    >::value;
 //};
 
 template <typename Head, typename Tail>
-struct predicates_find_nearest< boost::tuples::cons<Head, Tail> >
+struct predicates_find_distance< boost::tuples::cons<Head, Tail> >
 {
-    static const unsigned value = predicates_find_nearest_tuple<
+    static const unsigned value = predicates_find_distance_tuple<
         boost::tuples::cons<Head, Tail>,
         boost::tuples::length< boost::tuples::cons<Head, Tail> >::value
     >::value;

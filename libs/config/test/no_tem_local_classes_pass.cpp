@@ -27,11 +27,11 @@
 #ifndef BOOST_NO_CXX11_LOCAL_CLASS_TEMPLATE_PARAMETERS
 #include "boost_no_tem_local_classes.ipp"
 #else
-namespace boost_no_local_class_template_parameters = empty_boost;
+namespace boost_no_cxx11_local_class_template_parameters = empty_boost;
 #endif
 
 int main( int, char *[] )
 {
-   return boost_no_local_class_template_parameters::test();
+   return boost_no_cxx11_local_class_template_parameters::test();
 }
 

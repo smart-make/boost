@@ -46,15 +46,17 @@
 <p><b>Table of Contents</b></p>
 <dl>
 <dt><span class="section"><a href="geometry/introduction.html">Introduction</a></span></dt>
-<dt><span class="section"><a href="geometry/quickstart.html">Quick Start</a></span></dt>
-<dt><span class="section"><a href="geometry/design.html">Design Rationale</a></span></dt>
 <dt><span class="section"><a href="geometry/compilation.html">Compilation</a></span></dt>
-<dt><span class="section"><a href="geometry/spatial_indexes.html">Spatial indexes</a></span></dt>
-<dd><dl><dt><span class="section"><a href="geometry/spatial_indexes/r_tree.html">R-tree</a></span></dt></dl></dd>
-<dt><span class="section"><a href="geometry/indexes.html">Indexes</a></span></dt>
+<dt><span class="section"><a href="geometry/design.html">Design Rationale</a></span></dt>
+<dt><span class="section"><a href="geometry/quickstart.html">Quick Start</a></span></dt>
+<dt><span class="section"><a href="geometry/spatial_indexes.html">Spatial Indexes</a></span></dt>
 <dd><dl>
-<dt><span class="section"><a href="geometry/indexes/matrix.html">Reference matrix</a></span></dt>
-<dt><span class="section"><a href="geometry/indexes/alphabetical_index.html">Alphabetical Index</a></span></dt>
+<dt><span class="section"><a href="geometry/spatial_indexes/introduction.html">Introduction</a></span></dt>
+<dt><span class="section"><a href="geometry/spatial_indexes/rtree_quickstart.html">Quick Start</a></span></dt>
+<dt><span class="section"><a href="geometry/spatial_indexes/creation_and_modification.html">Creation
+      and Modification</a></span></dt>
+<dt><span class="section"><a href="geometry/spatial_indexes/queries.html">Queries</a></span></dt>
+<dt><span class="section"><a href="geometry/spatial_indexes/rtree_examples.html">Examples</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="geometry/reference.html">Reference</a></span></dt>
 <dd><dl>
@@ -68,14 +70,27 @@
 <dt><span class="section"><a href="geometry/reference/core.html">Core Metafunctions</a></span></dt>
 <dt><span class="section"><a href="geometry/reference/enumerations.html">Enumerations</a></span></dt>
 <dt><span class="section"><a href="geometry/reference/exceptions.html">Exceptions</a></span></dt>
+<dt><span class="section"><a href="geometry/reference/io.html">IO (input/output)</a></span></dt>
 <dt><span class="section"><a href="geometry/reference/iterators.html">Iterators</a></span></dt>
 <dt><span class="section"><a href="geometry/reference/models.html">Models</a></span></dt>
-<dt><span class="section"><a href="geometry/reference/spatial_indexes.html">Spatial indexes</a></span></dt>
+<dt><span class="section"><a href="geometry/reference/spatial_indexes.html">Spatial Indexes</a></span></dt>
 <dt><span class="section"><a href="geometry/reference/strategies.html">Strategies</a></span></dt>
 <dt><span class="section"><a href="geometry/reference/views.html">Views</a></span></dt>
 </dl></dd>
+<dt><span class="section"><a href="geometry/indexes.html">Indexes</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="geometry/indexes/matrix.html">Reference Matrix</a></span></dt>
+<dt><span class="section"><a href="geometry/indexes/alphabetical_index.html">Alphabetical Index</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="geometry/examples.html">Examples</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="geometry/examples/example__adapting_a_legacy_geometry_object_model.html">Example:
+      Adapting a legacy geometry object model</a></span></dt>
+<dt><span class="section"><a href="geometry/examples/example_source_code__adapting_a_legacy_geometry_object_model.html">Example
+      source code: Adapting a legacy geometry object model</a></span></dt>
+</dl></dd>
 <dt><span class="section"><a href="geometry/release_notes.html">Release Notes</a></span></dt>
-<dt><span class="section"><a href="geometry/aboutdoc.html">About this documentation</a></span></dt>
+<dt><span class="section"><a href="geometry/aboutdoc.html">About this Documentation</a></span></dt>
 <dt><span class="section"><a href="geometry/acknowledgments.html">Acknowledgments</a></span></dt>
 </dl>
 </div>
@@ -94,15 +109,21 @@
         Alfredo Correa (adaption of Boost.Array)
       </li>
 <li class="listitem">
+        Andrew Hundt (varray container, aka. static_vector)
+      </li>
+<li class="listitem">
         Federico Fern&#225;ndez (preliminary version of R-tree spatial index)
       </li>
 <li class="listitem">
         Karsten Ahnert (patch for cross-track distance)
       </li>
+<li class="listitem">
+        Mats Taraldsvik (documentation: adapting a legacy model)
+      </li>
 </ul></div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
-<td align="left"><p><small>Last revised: April 03, 2013 at 01:36:35 GMT</small></p></td>
+<td align="left"><p><small>Last revised: June 12, 2013 at 23:27:34 GMT</small></p></td>
 <td align="right"><div class="copyright-footer"></div></td>
 </tr></table>
 <hr>

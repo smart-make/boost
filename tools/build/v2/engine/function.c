@@ -93,8 +93,10 @@ void backtrace_line( FRAME * );
 #define INSTR_SET_ON                       36
 #define INSTR_APPEND_ON                    37
 #define INSTR_DEFAULT_ON                   38
+#define INSTR_GET_ON                       65
 
 #define INSTR_CALL_RULE                    39
+#define INSTR_CALL_MEMBER_RULE             66
 
 #define INSTR_APPLY_MODIFIERS              40
 #define INSTR_APPLY_INDEX                  41
@@ -471,9 +473,108 @@ static LIST * function_call_rule( JAM_FUNCTION * function, FRAME * frame,
         }
     }
 
-    result = evaluate_rule( rulename, inner );
+    result = evaluate_rule( bindrule( rulename, inner->module ), rulename, inner );
     frame_free( inner );
     object_free( rulename );
+    return result;
+}
+
+static LIST * function_call_member_rule( JAM_FUNCTION * function, FRAME * frame, STACK * s, int n_args, OBJECT * rulename, OBJECT * file, int line )
+{
+    FRAME   inner[ 1 ];
+    int i;
+    LIST * first = stack_pop( s );
+    LIST * result = L0;
+    LIST * trailing;
+    RULE * rule;
+    module_t * module;
+    OBJECT * real_rulename = 0;
+
+    frame->file = file;
+    frame->line = line;
+    
+    if ( list_empty( first ) )
+    {
+        backtrace_line( frame );
+        printf( "warning: object is empty\n" );
+        backtrace( frame );
+
+        list_free( first );
+
+        for( i = 0; i < n_args; ++i )
+        {
+            list_free( stack_pop( s ) );
+        }
+
+        return result;
+    }
+
+    /* FIXME: handle generic case */
+    assert( list_length( first ) == 1 );
+
+    module = bindmodule( list_front( first ) );
+    if ( module->class_module )
+    {
+        rule = bindrule( rulename, module );
+        real_rulename = object_copy( function_rulename( rule->procedure ) );
+    }
+    else
+    {
+        string buf[ 1 ];
+        string_new( buf );
+        string_append( buf, object_str( list_front( first ) ) );
+        string_push_back( buf, '.' );
+        string_append( buf, object_str( rulename ) );
+        real_rulename = object_new( buf->value );
+        string_free( buf );
+        rule = bindrule( real_rulename, frame->module );
+    }
+
+    frame_init( inner );
+
+    inner->prev = frame;
+    inner->prev_user = frame->module->user_module ? frame : frame->prev_user;
+    inner->module = frame->module;  /* This gets fixed up in evaluate_rule(), below. */
+
+    for( i = 0; i < n_args; ++i )
+    {
+        lol_add( inner->args, stack_at( s, n_args - i - 1 ) );
+    }
+
+    for( i = 0; i < n_args; ++i )
+    {
+        stack_pop( s );
+    }
+
+    if ( list_length( first ) > 1 )
+    {
+        string buf[ 1 ];
+        LIST * trailing = L0;
+        LISTITER iter = list_begin( first ), end = list_end( first );
+        iter = list_next( iter );
+        string_new( buf );
+        for ( ; iter != end; iter = list_next( iter ) )
+        {
+            string_append( buf, object_str( list_item( iter ) ) );
+            string_push_back( buf, '.' );
+            string_append( buf, object_str( rulename ) );
+            trailing = list_push_back( trailing, object_new( buf->value ) );
+            string_truncate( buf, 0 );
+        }
+        string_free( buf );
+        if ( inner->args->count == 0 )
+            lol_add( inner->args, trailing );
+        else
+        {
+            LIST * * const l = &inner->args->list[ 0 ];
+            *l = list_append( trailing, *l );
+        }
+    }
+
+    result = evaluate_rule( rule, real_rulename, inner );
+    frame_free( inner );
+    object_free( rulename );
+    object_free( real_rulename );
     return result;
 }
 
@@ -2324,7 +2425,6 @@ static void compile_parse( PARSE * parse, compiler * c, int result_location )
         compile_set_label( c, top );
         compile_emit_branch( c, INSTR_FOR_LOOP, end );
         compile_emit( c, INSTR_SET, var );
-        compile_emit( c, INSTR_POP, 0 );
 
         /* Run the loop body */
         compile_parse( parse->right, c, RESULT_NONE );
@@ -2482,12 +2582,62 @@ static void compile_parse( PARSE * parse, compiler * c, int result_location )
     }
     else if ( parse->type == PARSE_ON )
     {
-        int end = compile_new_label( c );
-        compile_parse( parse->left, c, RESULT_STACK );
-        compile_emit_branch( c, INSTR_PUSH_ON, end );
-        compile_parse( parse->right, c, RESULT_STACK );
-        compile_emit( c, INSTR_POP_ON, 0 );
-        compile_set_label( c, end );
+        if ( parse->right->type == PARSE_APPEND &&
+            parse->right->left->type == PARSE_NULL &&
+            parse->right->right->type == PARSE_LIST )
+        {
+            /* [ on $(target) return $(variable) ] */
+            PARSE * value = parse->right->right;
+            OBJECT * const o = value->string;
+            char const * s = object_str( o );
+            VAR_PARSE_GROUP * group;
+            OBJECT * varname = 0;
+            current_file = object_str( value->file );
+            current_line = value->line;
+            group = parse_expansion( &s );
+            if ( group->elems->size == 1 )
+            {
+                VAR_PARSE * one = dynamic_array_at( VAR_PARSE *, group->elems, 0 );
+                if ( one->type == VAR_PARSE_TYPE_VAR )
+                {
+                    VAR_PARSE_VAR * var = ( VAR_PARSE_VAR * )one;
+                    if ( var->modifiers->size == 0 && !var->subscript && var->name->elems->size == 1 )
+                    {
+                        VAR_PARSE * name = dynamic_array_at( VAR_PARSE *, var->name->elems, 0 );
+                        if ( name->type == VAR_PARSE_TYPE_STRING )
+                        {
+                            varname = ( ( VAR_PARSE_STRING * )name )->s;
+                        }
+                    }
+                }
+            }
+            if ( varname )
+            {
+                /* We have one variable with a fixed name and no modifiers. */
+                compile_parse( parse->left, c, RESULT_STACK );
+                compile_emit( c, INSTR_GET_ON, compile_emit_constant( c, varname ) );
+            }
+            else
+            {
+                /* Too complex.  Fall back on push/pop. */
+                int end = compile_new_label( c );
+                compile_parse( parse->left, c, RESULT_STACK );
+                compile_emit_branch( c, INSTR_PUSH_ON, end );
+                var_parse_group_compile( group, c );
+                compile_emit( c, INSTR_POP_ON, 0 );
+                compile_set_label( c, end );
+            }
+            var_parse_group_free( group );
+        }
+        else
+        {
+            int end = compile_new_label( c );
+            compile_parse( parse->left, c, RESULT_STACK );
+            compile_emit_branch( c, INSTR_PUSH_ON, end );
+            compile_parse( parse->right, c, RESULT_STACK );
+            compile_emit( c, INSTR_POP_ON, 0 );
+            compile_set_label( c, end );
+        }
         adjust_result( c, RESULT_STACK, result_location );
     }
     else if ( parse->type == PARSE_RULE )
@@ -2507,11 +2657,29 @@ static void compile_parse( PARSE * parse, compiler * c, int result_location )
         current_file = object_str( parse->file );
         current_line = parse->line;
         group = parse_expansion( &s );
-        var_parse_group_compile( group, c );
-        var_parse_group_free( group );
-        compile_emit( c, INSTR_CALL_RULE, n );
-        compile_emit( c, compile_emit_constant( c, parse->string ), parse->line
-            );
+
+        if ( group->elems->size == 2 &&
+            dynamic_array_at( VAR_PARSE *, group->elems, 0 )->type == VAR_PARSE_TYPE_VAR &&
+            dynamic_array_at( VAR_PARSE *, group->elems, 1 )->type == VAR_PARSE_TYPE_STRING &&
+            ( object_str( ( (VAR_PARSE_STRING *)dynamic_array_at( VAR_PARSE *, group->elems, 1 ) )->s )[ 0 ] == '.' ) )
+        {
+            VAR_PARSE_STRING * access = (VAR_PARSE_STRING *)dynamic_array_at( VAR_PARSE *, group->elems, 1 );
+            OBJECT * member = object_new( object_str( access->s ) + 1 );
+            /* Emit the object */
+            var_parse_var_compile( (VAR_PARSE_VAR *)dynamic_array_at( VAR_PARSE *, group->elems, 0 ), c );
+            var_parse_group_free( group );
+            compile_emit( c, INSTR_CALL_MEMBER_RULE, n );
+            compile_emit( c, compile_emit_constant( c, member ), parse->line );
+            object_free( member );
+        }
+        else
+        {
+            var_parse_group_compile( group, c );
+            var_parse_group_free( group );
+            compile_emit( c, INSTR_CALL_RULE, n );
+            compile_emit( c, compile_emit_constant( c, parse->string ), parse->line );
+        }
+
         adjust_result( c, RESULT_STACK, result_location );
     }
     else if ( parse->type == PARSE_RULES )
@@ -2549,6 +2717,10 @@ static void compile_parse( PARSE * parse, compiler * c, int result_location )
                     group->elems, 0 ) )->s );
                 var_parse_group_free( group );
                 compile_parse( parse->right, c, RESULT_STACK );
+                if ( result_location != RESULT_NONE )
+                {
+                    compile_emit( c, INSTR_SET_RESULT, 1 );
+                }
                 compile_emit( c, op_code, name );
             }
             else
@@ -2556,6 +2728,10 @@ static void compile_parse( PARSE * parse, compiler * c, int result_location )
                 var_parse_group_compile( group, c );
                 var_parse_group_free( group );
                 compile_parse( parse->right, c, RESULT_STACK );
+                if ( result_location != RESULT_NONE )
+                {
+                    compile_emit( c, INSTR_SET_RESULT, 1 );
+                }
                 compile_emit( c, op_code_group, 0 );
             }
         }
@@ -2563,9 +2739,16 @@ static void compile_parse( PARSE * parse, compiler * c, int result_location )
         {
             compile_parse( parse->left, c, RESULT_STACK );
             compile_parse( parse->right, c, RESULT_STACK );
+            if ( result_location != RESULT_NONE )
+            {
+                compile_emit( c, INSTR_SET_RESULT, 1 );
+            }
             compile_emit( c, op_code_group, 0 );
         }
-        adjust_result( c, RESULT_STACK, result_location );
+        if ( result_location != RESULT_NONE )
+        {
+            adjust_result( c, RESULT_RETURN, result_location );
+        }
     }
     else if ( parse->type == PARSE_SETCOMP )
     {
@@ -2775,7 +2958,7 @@ static void type_check_range( OBJECT * type_name, LISTITER iter, LISTITER end,
 
         /* Prepare the argument list */
         lol_add( frame->args, list_new( object_copy( list_item( iter ) ) ) );
-        error = evaluate_rule( type_name, frame );
+        error = evaluate_rule( bindrule( type_name, frame->module ), type_name, frame );
 
         if ( !list_empty( error ) )
             argument_error( object_str( list_front( error ) ), called, caller,
@@ -3331,6 +3514,7 @@ FUNCTION * function_bind_variables( FUNCTION * f, module_t * module,
             case INSTR_APPEND: op_code = INSTR_APPEND_FIXED; break;
             case INSTR_DEFAULT: op_code = INSTR_DEFAULT_FIXED; break;
             case INSTR_RETURN: return (FUNCTION *)new_func;
+            case INSTR_CALL_MEMBER_RULE:
             case INSTR_CALL_RULE: ++i; continue;
             case INSTR_PUSH_MODULE:
                 {
@@ -3710,7 +3894,10 @@ LIST * function_run( FUNCTION * function_, FRAME * frame, STACK * s )
 
         case INSTR_SET_RESULT:
             list_free( result );
-            result = stack_pop( s );
+            if ( !code->arg )
+                result = stack_pop( s );
+            else
+                result = list_copy( stack_top( s ) );
             break;
 
         case INSTR_PUSH_RESULT:
@@ -3912,23 +4099,52 @@ LIST * function_run( FUNCTION * function_, FRAME * frame, STACK * s )
             break;
         }
 
+        /* [ on $(target) return $(variable) ] */
+        case INSTR_GET_ON:
+        {
+            LIST * targets = stack_pop( s );
+            LIST * result = L0;
+            if ( !list_empty( targets ) )
+            {
+                OBJECT * varname = function->constants[ code->arg ];
+                TARGET * t = bindtarget( list_front( targets ) );
+                SETTINGS * s = t->settings;
+                int found = 0;
+                for ( ; s != 0; s = s->next )
+                {
+                    if ( object_equal( s->symbol, varname ) )
+                    {
+                        result = s->value;
+                        found = 1;
+                        break;
+                    }
+                }
+                if ( !found )
+                {
+                    result = var_get( frame->module, varname ) ;
+                }
+            }
+            stack_push( s, list_copy( result ) );
+            break;
+        }
+
         /*
          * Variable setting
          */
 
         case INSTR_SET:
-            function_set_variable( function, frame, code->arg, list_copy(
-                stack_top( s ) ) );
+            function_set_variable( function, frame, code->arg,
+                stack_pop( s ) );
             break;
 
         case INSTR_APPEND:
-            function_append_variable( function, frame, code->arg, list_copy(
-                stack_top( s ) ) );
+            function_append_variable( function, frame, code->arg,
+                stack_pop( s ) );
             break;
 
         case INSTR_DEFAULT:
-            function_default_variable( function, frame, code->arg, list_copy(
-                stack_top( s ) ) );
+            function_default_variable( function, frame, code->arg,
+                stack_pop( s ) );
             break;
 
         case INSTR_SET_FIXED:
@@ -3936,7 +4152,7 @@ LIST * function_run( FUNCTION * function_, FRAME * frame, STACK * s )
             LIST * * ptr = &frame->module->fixed_variables[ code->arg ];
             assert( code->arg < frame->module->num_fixed_variables );
             list_free( *ptr );
-            *ptr = list_copy( stack_top( s ) );
+            *ptr = stack_pop( s );
             break;
         }
 
@@ -3944,16 +4160,19 @@ LIST * function_run( FUNCTION * function_, FRAME * frame, STACK * s )
         {
             LIST * * ptr = &frame->module->fixed_variables[ code->arg ];
             assert( code->arg < frame->module->num_fixed_variables );
-            *ptr = list_append( *ptr, list_copy( stack_top( s ) ) );
+            *ptr = list_append( *ptr, stack_pop( s ) );
             break;
         }
 
         case INSTR_DEFAULT_FIXED:
         {
             LIST * * ptr = &frame->module->fixed_variables[ code->arg ];
+            LIST * value = stack_pop( s );
             assert( code->arg < frame->module->num_fixed_variables );
             if ( list_empty( *ptr ) )
-                *ptr = list_copy( stack_top( s ) );
+                *ptr = value;
+            else
+                list_free( value );
             break;
         }
 
@@ -3967,7 +4186,7 @@ LIST * function_run( FUNCTION * function_, FRAME * frame, STACK * s )
                 function_set_named_variable( function, frame, list_item( iter ),
                     list_copy( value ) );
             list_free( vars );
-            stack_push( s, value );
+            list_free( value );
             break;
         }
 
@@ -3981,7 +4200,7 @@ LIST * function_run( FUNCTION * function_, FRAME * frame, STACK * s )
                 function_append_named_variable( function, frame, list_item( iter
                     ), list_copy( value ) );
             list_free( vars );
-            stack_push( s, value );
+            list_free( value );
             break;
         }
 
@@ -3995,7 +4214,7 @@ LIST * function_run( FUNCTION * function_, FRAME * frame, STACK * s )
                 function_default_named_variable( function, frame, list_item(
                     iter ), list_copy( value ) );
             list_free( vars );
-            stack_push( s, value );
+            list_free( value );
             break;
         }
 
@@ -4009,6 +4228,15 @@ LIST * function_run( FUNCTION * function_, FRAME * frame, STACK * s )
                 function, code[ 1 ].op_code ) );
             LIST * result = function_call_rule( function, frame, s, code->arg,
                 unexpanded, function->file, code[ 1 ].arg );
+            stack_push( s, result );
+            ++code;
+            break;
+        }
+
+        case INSTR_CALL_MEMBER_RULE:
+        {
+            OBJECT * rule_name = function_get_constant( function, code[1].op_code );
+            LIST * result = function_call_member_rule( function, frame, s, code->arg, rule_name, function->file, code[1].arg );
             stack_push( s, result );
             ++code;
             break;

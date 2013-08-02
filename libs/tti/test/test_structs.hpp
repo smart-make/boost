@@ -25,7 +25,7 @@ struct AType
     struct CType
       {
       typedef int AnotherIntegerType;
-      template <class,class,int,short,class,template <class,int> class InnerTemplate,class> struct CTManyParameters { };
+      template <class,class,int,short,class,template <class,int> class,class> struct CTManyParameters { };
       template<class X,class Y,class Z,short AA> double SomeFuncTemplate(X,Y *,Z &) { double ret(AA); return ret; }
       };
     };

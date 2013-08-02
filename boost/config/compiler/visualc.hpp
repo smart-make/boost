@@ -1,11 +1,11 @@
-//  (C) Copyright John Maddock 2001 - 2003. 
-//  (C) Copyright Darin Adler 2001 - 2002. 
-//  (C) Copyright Peter Dimov 2001. 
-//  (C) Copyright Aleksey Gurtovoy 2002. 
-//  (C) Copyright David Abrahams 2002 - 2003. 
-//  (C) Copyright Beman Dawes 2002 - 2003. 
-//  Use, modification and distribution are subject to the 
-//  Boost Software License, Version 1.0. (See accompanying file 
+//  (C) Copyright John Maddock 2001 - 2003.
+//  (C) Copyright Darin Adler 2001 - 2002.
+//  (C) Copyright Peter Dimov 2001.
+//  (C) Copyright Aleksey Gurtovoy 2002.
+//  (C) Copyright David Abrahams 2002 - 2003.
+//  (C) Copyright Beman Dawes 2002 - 2003.
+//  Use, modification and distribution are subject to the
+//  Boost Software License, Version 1.0. (See accompanying file
 //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 //  See http://www.boost.org for most recent version.
@@ -33,6 +33,10 @@
 
 // Attempt to suppress VC6 warnings about the length of decorated names (obsolete):
 #pragma warning( disable : 4503 ) // warning: decorated name length exceeded
+
+#if _MSC_VER >= 1020
+#  define BOOST_HAS_PRAGMA_ONCE
+#endif
 
 //
 // versions check:
@@ -94,7 +98,7 @@
 
 #endif
 
-#if _MSC_VER < 1400 
+#if _MSC_VER < 1400
 // although a conforming signature for swprint exists in VC7.1
 // it appears not to actually work:
 #  define BOOST_NO_SWPRINTF
@@ -119,9 +123,9 @@
 #endif
 
 
-// MSVC (including the latest checked version) has not yet completely 
+// MSVC (including the latest checked version) has not yet completely
 // implemented value-initialization, as is reported:
-// "VC++ does not value-initialize members of derived classes without 
+// "VC++ does not value-initialize members of derived classes without
 // user-declared constructor", reported in 2009 by Sylvester Hesp:
 // https://connect.microsoft.com/VisualStudio/feedback/details/484295
 // "Presence of copy constructor breaks member class initialization",
@@ -148,11 +152,11 @@
 #  define BOOST_HAS_GETSYSTEMTIMEASFILETIME
 #endif
 
-//   
-// check for exception handling support:   
+//
+// check for exception handling support:
 #if !defined(_CPPUNWIND) && !defined(BOOST_NO_EXCEPTIONS)
-#  define BOOST_NO_EXCEPTIONS   
-#endif 
+#  define BOOST_NO_EXCEPTIONS
+#endif
 
 //
 // __int64 support:
@@ -227,6 +231,7 @@
 #  define BOOST_NO_CXX11_RAW_LITERALS
 #  define BOOST_NO_CXX11_VARIADIC_TEMPLATES
 #  define BOOST_NO_CXX11_UNIFIED_INITIALIZATION_SYNTAX
+#  define BOOST_NO_CXX11_TRAILING_RESULT_TYPES
 #endif
 
 // C++11 features not supported by any versions
@@ -241,6 +246,9 @@
 #define BOOST_NO_CXX11_UNICODE_LITERALS
 #define BOOST_NO_SFINAE_EXPR
 #define BOOST_NO_TWO_PHASE_NAME_LOOKUP
+#define BOOST_NO_CXX11_USER_DEFINED_LITERALS
+#define BOOST_NO_CXX11_ALIGNAS
+#define BOOST_NO_CXX11_INLINE_NAMESPACES
 
 //
 // prefix and suffix headers:
@@ -254,7 +262,7 @@
 
 #ifndef BOOST_COMPILER
 // TODO:
-// these things are mostly bogus. 1200 means version 12.0 of the compiler. The 
+// these things are mostly bogus. 1200 means version 12.0 of the compiler. The
 // artificial versions assigned to them only refer to the versions of some IDE
 // these compilers have been shipped with, and even that is not all of it. Some
 // were shipped with freely downloadable SDKs, others as crosscompilers in eVC.
@@ -277,8 +285,8 @@
 #     define BOOST_COMPILER_VERSION evc9
 #   elif _MSC_VER < 1700
 #     define BOOST_COMPILER_VERSION evc10
-#   elif _MSC_VER < 1800 
-#     define BOOST_COMPILER_VERSION evc11 
+#   elif _MSC_VER < 1800
+#     define BOOST_COMPILER_VERSION evc11
 #   else
 #      if defined(BOOST_ASSERT_CONFIG)
 #         error "Unknown EVC++ compiler version - please run the configure tests and report the results"
@@ -303,7 +311,9 @@
 #   elif _MSC_VER < 1700
 #     define BOOST_COMPILER_VERSION 10.0
 #   elif _MSC_VER < 1800 
-#     define BOOST_COMPILER_VERSION 11.0 
+#     define BOOST_COMPILER_VERSION 11.0
+#   elif _MSC_VER < 1900
+#     define BOOST_COMPILER_VERSION 12.0
 #   else
 #     define BOOST_COMPILER_VERSION _MSC_VER
 #   endif
@@ -313,8 +323,8 @@
 #endif
 
 //
-// last known and checked version is 1700 (VC11, aka 2011):
-#if (_MSC_VER > 1700)
+// last known and checked version is 1800.20617 (VC12 Preview, aka 2013 Preview):
+#if (_MSC_VER > 1800 && _MSC_FULL_VER > 180020617)
 #  if defined(BOOST_ASSERT_CONFIG)
 #     error "Unknown compiler version - please run the configure tests and report the results"
 #  else
